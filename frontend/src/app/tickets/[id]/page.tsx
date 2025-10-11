@@ -1,3 +1,5 @@
+'use client'
+
 import TicketDetail from '@/components/TicketDetail'
 
 interface TicketPageProps {

@@ -81,10 +81,40 @@ export default function TicketList({ initialData }: TicketListProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <Typography variant="h2" color="gray" className="mb-4">
-          Tickets
-        </Typography>
+        <div className="flex items-center gap-4 mb-4">
+          <Link href="/">
+            <Button
+              color="gray"
+              variant="text"
+              size="sm"
+            >
+              ← Voltar
+            </Button>
+          </Link>
+          <Typography variant="h2" color="gray">
+            Tickets
+          </Typography>
+        </div>
         
+        {/* Legenda */}
+        <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+          <Typography variant="small" color="gray" className="font-semibold">
+            Fonte dos dados:
+          </Typography>
+          <div className="flex items-center gap-2">
+            <Chip color="blue" value="SQLite" size="sm" variant="ghost" />
+            <Typography variant="small" color="gray">
+              Dados seed (20 primeiros)
+            </Typography>
+          </div>
+          <div className="flex items-center gap-2">
+            <Chip color="green" value="CSV" size="sm" variant="ghost" />
+            <Typography variant="small" color="gray">
+              Importados do CSV externo
+            </Typography>
+          </div>
+        </div>
+
         {/* Filtros */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Input
@@ -145,9 +175,17 @@ export default function TicketList({ initialData }: TicketListProps) {
               <CardBody>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <Typography variant="h5" color="blue-gray" className="mb-2">
-                      {ticket.subject}
-                    </Typography>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Typography variant="h5" color="blue-gray">
+                        {ticket.subject}
+                      </Typography>
+                      <Chip
+                        color={ticket.id <= 20 ? "blue" : "green"}
+                        value={ticket.id <= 20 ? "SQLite" : "CSV"}
+                        size="sm"
+                        variant="ghost"
+                      />
+                    </div>
                     <Typography color="gray" className="mb-2">
                       Cliente: {ticket.customer_name}
                     </Typography>
@@ -177,7 +215,11 @@ export default function TicketList({ initialData }: TicketListProps) {
                 
                 <div className="mt-4 flex justify-end">
                   <Link href={`/tickets/${ticket.id}`}>
-                    <Button size="sm" color="gray" variant="outlined" placeholder="">
+                    <Button 
+                      size="sm" 
+                      color="gray" 
+                      variant="outlined"
+                    >
                       Ver Detalhes
                     </Button>
                   </Link>

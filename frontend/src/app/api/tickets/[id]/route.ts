@@ -3,10 +3,11 @@ import { apiClient } from '@/lib/api'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const data = await apiClient.getTicket(params.id)
+    const { id } = await params
+    const data = await apiClient.getTicket(id)
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error fetching ticket:', error)
@@ -19,11 +20,12 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
-    const data = await apiClient.updateTicket(params.id, body)
+    const data = await apiClient.updateTicket(id, body)
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error updating ticket:', error)

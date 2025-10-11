@@ -34,6 +34,8 @@ export interface Metrics {
   status_counts: Record<string, number>
   channel_counts: Record<string, number>
   priority_counts: Record<string, number>
+  type_counts: Record<string, number>
+  gender_distribution: Record<string, number>
   top_products: Array<{ product: string; count: number }>
   total_tickets: number
   resolution_rate: number

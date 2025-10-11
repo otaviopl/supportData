@@ -17,12 +17,20 @@ export default function Home() {
           
           <div className="flex gap-4 justify-center">
             <Link href="/tickets">
-              <Button color="gray" size="lg" className="bg-gray-900" placeholder="">
+              <Button 
+                color="gray" 
+                size="lg" 
+                className="bg-gray-900"
+              >
                 Ver Tickets
               </Button>
             </Link>
             <Link href="/dashboard">
-              <Button color="gray" variant="outlined" size="lg" placeholder="">
+              <Button 
+                color="gray" 
+                variant="outlined" 
+                size="lg"
+              >
                 Dashboard
               </Button>
             </Link>

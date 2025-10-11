@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { 
   Card, 
   CardBody, 
   Typography, 
   Spinner,
-  Alert
+  Alert,
+  Button
 } from '@material-tailwind/react'
 import { Metrics } from '@/types'
 
@@ -55,12 +57,23 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Typography variant="h2" color="gray" className="mb-8">
-        Dashboard
-      </Typography>
+      <div className="flex items-center gap-4 mb-8">
+        <Link href="/">
+          <Button
+            color="gray"
+            variant="text"
+            size="sm"
+          >
+            ← Voltar
+          </Button>
+        </Link>
+        <Typography variant="h2" color="gray">
+          Dashboard
+        </Typography>
+      </div>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardBody>
             <Typography variant="h6" color="blue-gray" className="mb-2">
@@ -86,11 +99,25 @@ export default function Dashboard() {
         <Card>
           <CardBody>
             <Typography variant="h6" color="blue-gray" className="mb-2">
-              Tempo Médio
+              Tempo Médio Resolução
             </Typography>
             <Typography variant="h3" color="gray">
               {metrics.avg_resolution_time_hours 
                 ? `${metrics.avg_resolution_time_hours}h`
+                : 'N/A'
+              }
+            </Typography>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <Typography variant="h6" color="blue-gray" className="mb-2">
+              Satisfação Média
+            </Typography>
+            <Typography variant="h3" color="gray">
+              {metrics.avg_satisfaction_rating 
+                ? `${metrics.avg_satisfaction_rating}/5`
                 : 'N/A'
               }
             </Typography>
@@ -182,7 +209,108 @@ export default function Dashboard() {
             </div>
           </CardBody>
         </Card>
+
+        {/* Tipo de Ticket */}
+        {metrics.type_counts && Object.keys(metrics.type_counts).length > 0 && (
+          <Card>
+            <CardBody>
+              <Typography variant="h4" color="blue-gray" className="mb-4">
+                Distribuição por Tipo
+              </Typography>
+              <div className="space-y-3">
+                {Object.entries(metrics.type_counts).map(([type, count]) => (
+                  <div key={type} className="flex justify-between items-center">
+                    <Typography color="blue-gray" className="capitalize">
+                      {type.replace('_', ' ')}
+                    </Typography>
+                    <Typography color="gray" className="font-semibold">
+                      {count.toLocaleString()}
+                    </Typography>
+                  </div>
+                ))}
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Distribuição por Gênero */}
+        {metrics.gender_distribution && Object.keys(metrics.gender_distribution).length > 0 && (
+          <Card>
+            <CardBody>
+              <Typography variant="h4" color="blue-gray" className="mb-4">
+                Distribuição por Gênero
+              </Typography>
+              <div className="space-y-3">
+                {Object.entries(metrics.gender_distribution).map(([gender, count]) => (
+                  <div key={gender} className="flex justify-between items-center">
+                    <Typography color="blue-gray" className="capitalize">
+                      {gender === 'male' ? 'Masculino' : gender === 'female' ? 'Feminino' : gender}
+                    </Typography>
+                    <Typography color="gray" className="font-semibold">
+                      {count.toLocaleString()}
+                    </Typography>
+                  </div>
+                ))}
+              </div>
+            </CardBody>
+          </Card>
+        )}
       </div>
+
+      {/* Tickets ao longo do tempo */}
+      {metrics.tickets_by_day && metrics.tickets_by_day.length > 0 && (
+        <Card className="mt-6">
+          <CardBody>
+            <Typography variant="h4" color="blue-gray" className="mb-4">
+              Tickets ao Longo do Tempo
+            </Typography>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <Typography variant="small" color="gray">
+                  Primeiro ticket: {metrics.tickets_by_day[0].date}
+                </Typography>
+                <Typography variant="small" color="gray">
+                  Último ticket: {metrics.tickets_by_day[metrics.tickets_by_day.length - 1].date}
+                </Typography>
+              </div>
+              <div className="flex justify-between text-sm">
+                <Typography variant="small" color="gray">
+                  Dia com mais tickets: {
+                    (() => {
+                      const max = metrics.tickets_by_day.reduce((prev, curr) => 
+                        curr.count > prev.count ? curr : prev
+                      )
+                      return `${max.date} (${max.count} tickets)`
+                    })()
+                  }
+                </Typography>
+                <Typography variant="small" color="gray">
+                  Média diária: {
+                    (metrics.total_tickets / metrics.tickets_by_day.length).toFixed(1)
+                  } tickets/dia
+                </Typography>
+              </div>
+              <div className="mt-4 h-32 flex items-end gap-1">
+                {metrics.tickets_by_day
+                  .filter((_, i) => i % Math.ceil(metrics.tickets_by_day.length / 100) === 0)
+                  .map((day, index) => {
+                    const maxCount = Math.max(...metrics.tickets_by_day.map(d => d.count))
+                    const height = (day.count / maxCount) * 100
+                    return (
+                      <div
+                        key={index}
+                        className="flex-1 bg-gray-800 hover:bg-gray-600 transition-colors rounded-t"
+                        style={{ height: `${height}%`, minHeight: '2px' }}
+                        title={`${day.date}: ${day.count} tickets`}
+                      />
+                    )
+                  })
+                }
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   )
 }

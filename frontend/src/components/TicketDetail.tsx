@@ -123,14 +123,20 @@ export default function TicketDetail({ ticketId }: TicketDetailProps) {
           variant="outlined"
           onClick={() => router.back()}
           className="mb-4"
-          placeholder=""
         >
           Voltar
         </Button>
         
-        <Typography variant="h2" color="gray" className="mb-4">
-          Ticket #{ticket.id}
-        </Typography>
+        <div className="flex items-center gap-3 mb-4">
+          <Typography variant="h2" color="gray">
+            Ticket #{ticket.id}
+          </Typography>
+          <Chip
+            color={ticket.id <= 20 ? "blue" : "green"}
+            value={ticket.id <= 20 ? "SQLite (Seed)" : "CSV Import"}
+            size="sm"
+          />
+        </div>
       </div>
 
       {error && (

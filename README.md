@@ -2,73 +2,68 @@
 
 Sistema de gerenciamento de tickets de suporte com FastAPI + SQLite e processamento ETL.
 
-## Estrutura
+## Dataset
 
-```
-├─ backend/
-│  ├─ app.py              # FastAPI application
-│  ├─ db.py               # Database setup
-│  ├─ models.py           # Pydantic models
-│  ├─ repositories.py     # Database operations
-│  ├─ seed.py             # Seed data
-│  └─ requirements.txt    # Dependencies
-├─ data/
-│  ├─ etl_support.py      # ETL script
-│  ├─ raw/
-│  │  ├─ seed_tickets.json
-│  │  └─ tickets.csv
-│  └─ processed/
-│     └─ metrics.json
-├─ Makefile
-└─ README.md
-```
+**Fonte**: [Customer Support Ticket Dataset - Kaggle](https://www.kaggle.com/datasets/suraj520/customer-support-ticket-dataset?resource=download)
 
-## Setup
+- 29.808 tickets de suporte ao cliente
+- Campos: Data, Status, Prioridade, Canal, Produto, Satisfação
+- Formato: CSV com dados históricos reais
 
-### 1. Instalar dependências
+## Setup Rápido
 
+### 1. Backend
 ```bash
+# Instalar dependências
 pip install -r backend/requirements.txt
-```
 
-### 2. Executar backend
-
-```bash
+# Executar servidor
 uvicorn backend.app:app --reload
 ```
 
-Backend disponível em: http://localhost:8000
-
-### 3. Gerar métricas
-
+### 2. ETL (Métricas)
 ```bash
+# Processar dados do CSV com pandas
 python data/etl_support.py
 ```
 
-Processa dados do CSV e gera métricas em `data/processed/metrics.json`.
+### 3. Frontend (Opcional)
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
 
 ## API Endpoints
 
 ### GET /tickets
+Lista tickets com paginação e filtros.
 
-Listar tickets com paginação e filtros.
+**Parâmetros:**
+- `page` (int): Página (default: 1)
+- `page_size` (int): Itens por página (default: 20, max: 100)
+- `q` (string): Busca em assunto/cliente
+- `status` (enum): open, in_progress, on_hold, resolved, closed
+- `priority` (enum): low, medium, high, urgent
+- `channel` (enum): email, slack, whatsapp, web, phone
 
-Parâmetros:
-- `page` (int, default=1)
-- `page_size` (int, default=20, max=100)
-- `q` (string): busca em subject ou customer_name
-- `status`, `priority`, `channel` (enum): filtros
-
-Exemplo:
+**Exemplo:**
 ```bash
-curl "http://localhost:8000/tickets?q=erro&status=open"
+curl "http://localhost:8000/tickets?status=open&priority=high"
 ```
 
 ### PATCH /tickets/{id}
+Atualiza status e/ou prioridade de um ticket.
 
-Atualizar status e/ou prioridade.
+**Body:**
+```json
+{
+  "status": "resolved",
+  "priority": "medium"
+}
+```
 
-Exemplo:
+**Exemplo:**
 ```bash
 curl -X PATCH "http://localhost:8000/tickets/1" \
   -H "Content-Type: application/json" \
@@ -76,60 +71,70 @@ curl -X PATCH "http://localhost:8000/tickets/1" \
 ```
 
 ### GET /metrics
+Retorna métricas processadas do dataset Kaggle.
 
-Retornar métricas processadas pelo ETL.
-
+**Exemplo:**
 ```bash
 curl "http://localhost:8000/metrics"
 ```
 
-## Enums
-
-**Status:** open, in_progress, on_hold, resolved, closed
-**Priority:** low, medium, high, urgent  
-**Channel:** email, slack, whatsapp, web, phone
-
-## Database Schema
-
-```sql
-CREATE TABLE tickets (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  customer_name TEXT NOT NULL,
-  channel TEXT NOT NULL,
-  subject TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL,
-  priority TEXT NOT NULL
-);
+**Resposta:**
+```json
+{
+  "tickets_by_day": [{"date": "2020-01-01", "count": 8}],
+  "status_counts": {"open": 1500, "resolved": 800},
+  "priority_counts": {"high": 600, "medium": 1200},
+  "channel_counts": {"email": 2000, "web": 800},
+  "top_products": [{"product": "Product A", "count": 500}],
+  "total_tickets": 29808,
+  "avg_resolution_time_hours": 24.5,
+  "avg_satisfaction_rating": 4.2,
+  "resolution_rate": 85.3
+}
 ```
 
-## Comandos
+## Teste Rápido
 
 ```bash
-make install    # Instalar dependências
-make run-backend # Executar servidor
-make etl        # Processar métricas
-make clean      # Limpar arquivos
-```
-
-## Testes
-
-```bash
-# Listar tickets
+# 1. Listar tickets
 curl "http://localhost:8000/tickets"
 
-# Buscar com filtros
-curl "http://localhost:8000/tickets?q=erro&status=open"
-
-# Atualizar ticket
+# 2. Alterar status do ticket 1
 curl -X PATCH "http://localhost:8000/tickets/1" \
   -H "Content-Type: application/json" \
-  -d '{"status": "resolved"}'
+  -d '{"status": "in_progress"}'
 
-# Ver métricas
+# 3. Ver métricas
 curl "http://localhost:8000/metrics"
 ```
 
+## Estrutura do Projeto
 
+```
+├─ backend/               # FastAPI + SQLite
+│  ├─ app.py             # Endpoints principais
+│  ├─ models.py          # Enums e validações
+│  ├─ repositories.py    # CRUD operations
+│  └─ db.py              # Configuração SQLite
+├─ data/
+│  ├─ raw/tickets.csv    # Dataset do Kaggle
+│  ├─ processed/         # Métricas geradas
+│  └─ etl_support.py     # Script ETL com pandas
+└─ frontend/             # Next.js (opcional)
+```
+
+## Tecnologias
+
+- **Backend**: Python 3.8+ + FastAPI + SQLite
+- **ETL**: pandas + datetime parsing
+- **Frontend**: Next.js 15 + TypeScript + Material Tailwind
+- **Dataset**: Kaggle Customer Support Tickets (29.808 registros)
+
+## Comandos Úteis
+
+```bash
+make install      # Instalar dependências
+make run-backend  # Executar servidor
+make etl          # Processar métricas
+make clean        # Limpar arquivos
+```

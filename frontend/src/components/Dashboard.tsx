@@ -8,7 +8,8 @@ import {
   Typography, 
   Spinner,
   Alert,
-  Button
+  Button,
+  Chip
 } from '@material-tailwind/react'
 import { Metrics } from '@/types'
 
@@ -70,6 +71,24 @@ export default function Dashboard() {
         <Typography variant="h2" color="gray">
           Dashboard
         </Typography>
+      </div>
+
+      {/* Flag de origem dos dados */}
+      <div className="flex items-center gap-4 mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <Chip
+          color="green"
+          value="CSV"
+          size="sm"
+          variant="filled"
+        />
+        <div>
+          <Typography variant="h6" color="green" className="font-semibold">
+            Dados Importados do CSV
+          </Typography>
+          <Typography variant="small" color="green" className="opacity-80">
+            Métricas geradas a partir do arquivo tickets.csv com {metrics?.total_tickets.toLocaleString()} registros
+          </Typography>
+        </div>
       </div>
 
       {/* Cards de resumo */}

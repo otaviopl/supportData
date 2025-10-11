@@ -3,9 +3,9 @@ from pathlib import Path
 from datetime import datetime
 from collections import Counter
 
-BASE = Path(__file__).resolve().parents[1]
-CSV_PATH = BASE / "data" / "raw" / "tickets.csv"
-OUT_PATH = BASE / "data" / "processed" / "metrics.json"
+BASE = Path(__file__).resolve().parent
+CSV_PATH = BASE / "raw" / "tickets.csv"
+OUT_PATH = BASE / "processed" / "metrics.json"
 
 def read_csv():
     with open(CSV_PATH, newline="", encoding="utf-8") as f:

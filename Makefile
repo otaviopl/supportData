@@ -23,7 +23,7 @@ seed:
 
 etl:
 	@echo "Running ETL process..."
-	python scripts/etl_support.py
+	python data/etl_support.py
 
 clean:
 	@echo "Cleaning up..."

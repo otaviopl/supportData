@@ -12,11 +12,11 @@ Sistema completo de gerenciamento de tickets de suporte com backend FastAPI + SQ
 │  ├─ repositories.py     # Database operations (CRUD)
 │  ├─ seed.py             # Seed data loader
 │  └─ requirements.txt    # Python dependencies
-├─ scripts/
-│  └─ etl_support.py      # ETL script for metrics
 ├─ data/
+│  ├─ etl_support.py      # ETL script for metrics
 │  ├─ raw/
-│  │  └─ seed_tickets.json    # Initial ticket data (~20 records)
+│  │  ├─ seed_tickets.json    # Initial ticket data (~20 records)
+│  │  └─ tickets.csv          # External CSV data source
 │  └─ processed/
 │     └─ metrics.json         # Generated metrics (via ETL)
 ├─ .env.example           # Environment variables template
@@ -59,7 +59,7 @@ O backend estará disponível em: **http://localhost:8000**
 ```bash
 make etl
 # ou
-python scripts/etl_support.py
+python data/etl_support.py
 ```
 
 Isso irá:
@@ -188,7 +188,7 @@ curl "http://localhost:8000/metrics"
 }
 ```
 
-**Nota:** Retorna 404 se `metrics.json` não existir. Execute `python scripts/etl_support.py` para gerar.
+**Nota:** Retorna 404 se `metrics.json` não existir. Execute `python data/etl_support.py` para gerar.
 
 ## 🗃️ Enums
 

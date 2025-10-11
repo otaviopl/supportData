@@ -108,7 +108,7 @@ async def get_metrics() -> dict[str, Any]:
     if not metrics_file.exists():
         raise HTTPException(
             status_code=404,
-            detail="Métricas não encontradas. Execute: python scripts/etl_support.py"
+            detail="Métricas não encontradas. Execute: python data/etl_support.py"
         )
     
     with open(metrics_file, "r", encoding="utf-8") as f:

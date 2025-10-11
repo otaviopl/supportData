@@ -1,172 +1,139 @@
-"""
-ETL script to compute support metrics from tickets.
-Generates data/processed/metrics.json
-"""
-import json
-import sqlite3
+import json, csv
 from pathlib import Path
 from datetime import datetime
-from collections import defaultdict, Counter
+from collections import Counter
 
+BASE = Path(__file__).resolve().parents[1]
+CSV_PATH = BASE / "data" / "raw" / "tickets.csv"
+OUT_PATH = BASE / "data" / "processed" / "metrics.json"
 
-def get_db_path() -> Path:
-    """Get the database path."""
-    return Path(__file__).parent.parent / "app.db"
+def read_csv():
+    with open(CSV_PATH, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
 
+def parse_date(date_str):
+    if not date_str or date_str.strip() == "":
+        return None
+    try:
+        return datetime.strptime(date_str.strip(), "%Y-%m-%d").date().isoformat()
+    except:
+        return None
 
-def get_tickets_from_db():
-    """Fetch all tickets from the database."""
-    db_path = get_db_path()
-    
-    if not db_path.exists():
-        print(f"⚠ Database not found at {db_path}")
-        print("Please run the backend first to initialize the database.")
-        return []
-    
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT id, created_at, updated_at, customer_name, channel,
-               subject, description, status, priority
-        FROM tickets
-    """)
-    
-    tickets = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-    
-    return tickets
+def parse_datetime(dt_str):
+    if not dt_str or dt_str.strip() == "":
+        return None
+    try:
+        return datetime.strptime(dt_str.strip(), "%Y-%m-%d %H:%M:%S")
+    except:
+        return None
 
-
-def compute_metrics(tickets: list[dict]) -> dict:
-    """
-    Compute various metrics from tickets.
-    
-    Returns a dictionary with:
-    - tickets_by_day: count of tickets created per day
-    - top_categories: top channels by ticket count
-    - status_counts: count of tickets per status
-    - resolution_hours_avg: average time to resolve (if applicable)
-    - pct_within_sla: percentage within SLA (if applicable)
-    """
-    if not tickets:
-        return {
-            "tickets_by_day": [],
-            "top_categories": [],
-            "status_counts": {},
-            "total_tickets": 0,
-        }
-    
-    # Tickets by day
-    tickets_by_day_counter = Counter()
-    for ticket in tickets:
-        created_date = ticket["created_at"][:10]  # Extract YYYY-MM-DD
-        tickets_by_day_counter[created_date] += 1
-    
-    tickets_by_day = [
-        {"date": date, "count": count}
-        for date, count in sorted(tickets_by_day_counter.items())
-    ]
-    
-    # Top categories (channels)
-    channel_counter = Counter(ticket["channel"] for ticket in tickets)
-    top_categories = [
-        {"category": channel, "count": count}
-        for channel, count in channel_counter.most_common()
-    ]
-    
-    # Status counts
-    status_counter = Counter(ticket["status"] for ticket in tickets)
-    status_counts = dict(status_counter)
-    
-    # Resolution time (for resolved/closed tickets)
-    resolution_times = []
-    for ticket in tickets:
-        if ticket["status"] in ["resolved", "closed"]:
-            try:
-                created = datetime.fromisoformat(ticket["created_at"].replace("Z", "+00:00"))
-                updated = datetime.fromisoformat(ticket["updated_at"].replace("Z", "+00:00"))
-                duration_hours = (updated - created).total_seconds() / 3600
-                resolution_times.append(duration_hours)
-            except Exception:
-                continue
-    
-    resolution_hours_avg = None
-    if resolution_times:
-        resolution_hours_avg = round(sum(resolution_times) / len(resolution_times), 2)
-    
-    # SLA compliance (example: assuming 48h SLA for high/urgent priority)
-    within_sla = 0
-    total_resolved = len(resolution_times)
-    
-    if total_resolved > 0:
-        for i, ticket in enumerate(tickets):
-            if ticket["status"] in ["resolved", "closed"] and i < len(resolution_times):
-                if ticket["priority"] in ["high", "urgent"]:
-                    # SLA is 48 hours
-                    if resolution_times[i] <= 48:
-                        within_sla += 1
-                else:
-                    # SLA is 120 hours for low/medium
-                    if resolution_times[i] <= 120:
-                        within_sla += 1
-        
-        pct_within_sla = round((within_sla / total_resolved) * 100, 2)
-    else:
-        pct_within_sla = None
-    
-    return {
-        "tickets_by_day": tickets_by_day,
-        "top_categories": top_categories,
-        "status_counts": status_counts,
-        "total_tickets": len(tickets),
-        "resolution_hours_avg": resolution_hours_avg,
-        "pct_within_sla": pct_within_sla,
-    }
-
-
-def save_metrics(metrics: dict) -> None:
-    """Save metrics to JSON file."""
-    output_dir = Path(__file__).parent.parent / "data" / "processed"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    output_file = output_dir / "metrics.json"
-    
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=2, ensure_ascii=False)
-    
-    print(f"✓ Metrics saved to {output_file}")
-
+def calculate_resolution_time(first_response, resolution_time):
+    if not first_response or not resolution_time:
+        return None
+    try:
+        first = parse_datetime(first_response)
+        resolution = parse_datetime(resolution_time)
+        if first and resolution:
+            return (resolution - first).total_seconds() / 3600
+    except:
+        pass
+    return None
 
 def main():
-    """Main ETL process."""
-    print("Starting ETL process...")
+    print("Iniciando ETL...")
     
-    # Extract
-    print("Extracting tickets from database...")
-    tickets = get_tickets_from_db()
-    print(f"Found {len(tickets)} tickets")
+    if not CSV_PATH.exists():
+        print(f"⚠ CSV não encontrado: {CSV_PATH}")
+        return
     
-    # Transform
-    print("Computing metrics...")
-    metrics = compute_metrics(tickets)
+    rows = read_csv()
+    print(f"Lidos {len(rows)} tickets")
     
-    # Load
-    print("Saving metrics...")
-    save_metrics(metrics)
+    tickets_by_day = Counter()
+    tickets_by_status = Counter()
+    tickets_by_priority = Counter()
+    tickets_by_channel = Counter()
+    tickets_by_type = Counter()
+    tickets_by_gender = Counter()
+    products_purchased = Counter()
+    resolution_times = []
+    satisfaction_ratings = []
     
-    print("\n✓ ETL process completed!")
-    print(f"  Total tickets: {metrics['total_tickets']}")
-    print(f"  Unique days: {len(metrics['tickets_by_day'])}")
-    print(f"  Top category: {metrics['top_categories'][0]['category'] if metrics['top_categories'] else 'N/A'}")
-    if metrics.get('resolution_hours_avg'):
-        print(f"  Avg resolution time: {metrics['resolution_hours_avg']} hours")
-    if metrics.get('pct_within_sla'):
-        print(f"  SLA compliance: {metrics['pct_within_sla']}%")
-
+    for ticket in rows:
+        # Data de criação
+        purchase_date = parse_date(ticket.get("Date of Purchase", ""))
+        if purchase_date:
+            tickets_by_day[purchase_date] += 1
+        
+        # Status
+        status = ticket.get("Ticket Status", "").strip().lower()
+        if status:
+            tickets_by_status[status] += 1
+        
+        # Prioridade
+        priority = ticket.get("Ticket Priority", "").strip().lower()
+        if priority:
+            tickets_by_priority[priority] += 1
+        
+        # Canal
+        channel = ticket.get("Ticket Channel", "").strip().lower()
+        if channel:
+            tickets_by_channel[channel] += 1
+        
+        # Tipo
+        ticket_type = ticket.get("Ticket Type", "").strip().lower()
+        if ticket_type:
+            tickets_by_type[ticket_type] += 1
+        
+        # Gênero
+        gender = ticket.get("Customer Gender", "").strip().lower()
+        if gender:
+            tickets_by_gender[gender] += 1
+        
+        # Produto
+        product = ticket.get("Product Purchased", "").strip()
+        if product:
+            products_purchased[product] += 1
+        
+        # Tempo de resolução
+        resolution_time = calculate_resolution_time(
+            ticket.get("First Response Time", ""),
+            ticket.get("Time to Resolution", "")
+        )
+        if resolution_time:
+            resolution_times.append(resolution_time)
+        
+        # Satisfação
+        rating = ticket.get("Customer Satisfaction Rating", "").strip()
+        if rating and rating.isdigit():
+            satisfaction_ratings.append(int(rating))
+    
+    # Métricas calculadas
+    avg_resolution_time = sum(resolution_times) / len(resolution_times) if resolution_times else None
+    avg_satisfaction = sum(satisfaction_ratings) / len(satisfaction_ratings) if satisfaction_ratings else None
+    
+    metrics = {
+        "tickets_by_day": [{"date": d, "count": c} for d, c in sorted(tickets_by_day.items())],
+        "status_counts": dict(tickets_by_status),
+        "priority_counts": dict(tickets_by_priority),
+        "channel_counts": dict(tickets_by_channel),
+        "type_counts": dict(tickets_by_type),
+        "gender_distribution": dict(tickets_by_gender),
+        "top_products": [{"product": p, "count": c} for p, c in products_purchased.most_common(10)],
+        "total_tickets": len(rows),
+        "avg_resolution_time_hours": round(avg_resolution_time, 2) if avg_resolution_time else None,
+        "avg_satisfaction_rating": round(avg_satisfaction, 2) if avg_satisfaction else None,
+        "resolution_rate": round((tickets_by_status.get("resolved", 0) + tickets_by_status.get("closed", 0)) / len(rows) * 100, 2) if rows else 0
+    }
+    
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUT_PATH.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"✓ Métricas salvas em {OUT_PATH}")
+    print(f"  Total: {metrics['total_tickets']} tickets")
+    print(f"  Status mais comum: {max(tickets_by_status.items(), key=lambda x: x[1]) if tickets_by_status else 'N/A'}")
+    print(f"  Canal mais usado: {max(tickets_by_channel.items(), key=lambda x: x[1]) if tickets_by_channel else 'N/A'}")
+    if avg_resolution_time:
+        print(f"  Tempo médio de resolução: {avg_resolution_time:.2f}h")
 
 if __name__ == "__main__":
     main()
-
-

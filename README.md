@@ -63,8 +63,8 @@ python scripts/etl_support.py
 ```
 
 Isso irá:
-- Ler todos os tickets do banco de dados
-- Computar métricas (tickets por dia, categorias, status, etc.)
+- Ler dados do arquivo `data/raw/tickets.csv`
+- Computar métricas detalhadas (status, canais, produtos, satisfação, etc.)
 - Salvar em `data/processed/metrics.json`
 
 ## 📚 API Endpoints
@@ -163,27 +163,32 @@ curl "http://localhost:8000/metrics"
 ```json
 {
   "tickets_by_day": [
-    {"date": "2025-09-20", "count": 1},
-    {"date": "2025-09-21", "count": 2}
-  ],
-  "top_categories": [
-    {"category": "email", "count": 8},
-    {"category": "slack", "count": 5}
+    {"date": "2020-01-01", "count": 8},
+    {"date": "2020-01-02", "count": 12}
   ],
   "status_counts": {
-    "open": 6,
-    "in_progress": 5,
-    "resolved": 4,
-    "on_hold": 3,
-    "closed": 2
+    "open": 2819,
+    "pending customer response": 2881,
+    "closed": 2769
   },
-  "total_tickets": 20,
-  "resolution_hours_avg": 36.5,
-  "pct_within_sla": 85.5
+  "channel_counts": {
+    "email": 2143,
+    "social media": 2121,
+    "phone": 2132,
+    "chat": 2073
+  },
+  "top_products": [
+    {"product": "Canon EOS", "count": 240},
+    {"product": "GoPro Hero", "count": 228}
+  ],
+  "total_tickets": 8469,
+  "resolution_rate": 32.7,
+  "avg_resolution_time_hours": -0.06,
+  "avg_satisfaction_rating": null
 }
 ```
 
-**Nota:** Retorna 404 se `metrics.json` não existir. Execute `make etl` para gerar.
+**Nota:** Retorna 404 se `metrics.json` não existir. Execute `python scripts/etl_support.py` para gerar.
 
 ## 🗃️ Enums
 

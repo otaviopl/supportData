@@ -1,5 +1,7 @@
+import json
+from pathlib import Path
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.seed import load_seed_data
@@ -41,7 +43,7 @@ async def root():
     return {
         "message": "Support Ticket API",
         "version": "1.0.0",
-        "endpoints": ["GET /tickets", "PATCH /tickets/{id}"]
+        "endpoints": ["GET /tickets", "PATCH /tickets/{id}", "GET /metrics"]
     }
 
 
@@ -97,6 +99,22 @@ async def patch_ticket(ticket_id: int, update_data: TicketUpdate):
         priority=updated_ticket.priority,
         updated_at=updated_ticket.updated_at,
     )
+
+
+@app.get("/metrics")
+async def get_metrics() -> dict[str, Any]:
+    metrics_file = Path(__file__).parent.parent / "data" / "processed" / "metrics.json"
+    
+    if not metrics_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Métricas não encontradas. Execute: python scripts/etl_support.py"
+        )
+    
+    with open(metrics_file, "r", encoding="utf-8") as f:
+        metrics = json.load(f)
+    
+    return metrics
 
 
 if __name__ == "__main__":

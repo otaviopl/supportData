@@ -5,47 +5,62 @@ Sistema de gerenciamento de tickets de suporte com FastAPI + SQLite e processame
 ## Estrutura
 
 ```
-├─ backend/
-│  ├─ app.py              # FastAPI application
-│  ├─ db.py               # Database setup
-│  ├─ models.py           # Pydantic models
-│  ├─ repositories.py     # Database operations
-│  ├─ seed.py             # Seed data
-│  └─ requirements.txt    # Dependencies
+├─ backend/               # FastAPI backend
+│  ├─ app.py
+│  ├─ db.py
+│  ├─ models.py
+│  ├─ repositories.py
+│  ├─ seed.py
+│  └─ requirements.txt
+├─ frontend/              # Next.js frontend
+│  ├─ src/
+│  │  ├─ app/            # App Router
+│  │  ├─ components/     # React components
+│  │  ├─ lib/            # Utilities
+│  │  └─ types/          # TypeScript types
+│  ├─ package.json
+│  └─ .nvmrc            # Node 20.11.0
 ├─ data/
-│  ├─ etl_support.py      # ETL script
+│  ├─ etl_support.py
 │  ├─ raw/
-│  │  ├─ seed_tickets.json
-│  │  └─ tickets.csv
 │  └─ processed/
-│     └─ metrics.json
 ├─ Makefile
 └─ README.md
 ```
 
 ## Setup
 
-### 1. Instalar dependências
+### Backend
 
 ```bash
+# Instalar dependências
 pip install -r backend/requirements.txt
-```
 
-### 2. Executar backend
-
-```bash
+# Executar servidor
 uvicorn backend.app:app --reload
 ```
 
-Backend disponível em: http://localhost:8000
+Backend: http://localhost:8000
 
-### 3. Gerar métricas
+### Frontend
+
+```bash
+cd frontend
+
+# Instalar dependências
+pnpm install
+
+# Executar servidor
+pnpm dev
+```
+
+Frontend: http://localhost:3000
+
+### ETL (Métricas)
 
 ```bash
 python data/etl_support.py
 ```
-
-Processa dados do CSV e gera métricas em `data/processed/metrics.json`.
 
 ## API Endpoints
 

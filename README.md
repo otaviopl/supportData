@@ -2,13 +2,18 @@
 
 Sistema de gerenciamento de tickets de suporte com FastAPI + SQLite e processamento ETL.
 
+## ⚠️ Arquitetura de Dados
+
+O sistema utiliza **duas fontes de dados independentes**:
+
+- **SQLite**: 20+ tickets para operações CRUD (listar, editar)
+- **CSV Kaggle**: para análise e métricas
+- **ETL**: Processa APENAS o CSV → gera métricas em JSON
+- **Frontend**: Lista tickets do SQLite + Dashboard com métricas do CSV
+
 ## Dataset
 
 **Fonte**: [Customer Support Ticket Dataset - Kaggle](https://www.kaggle.com/datasets/suraj520/customer-support-ticket-dataset?resource=download)
-
-- 29.808 tickets de suporte ao cliente
-- Campos: Data, Status, Prioridade, Canal, Produto, Satisfação
-- Formato: CSV com dados históricos reais
 
 ## Setup Rápido
 
@@ -82,45 +87,32 @@ curl "http://localhost:8000/metrics"
 ```json
 {
   "tickets_by_day": [{"date": "2020-01-01", "count": 8}],
-  "status_counts": {"open": 1500, "resolved": 800},
-  "priority_counts": {"high": 600, "medium": 1200},
-  "channel_counts": {"email": 2000, "web": 800},
-  "top_products": [{"product": "Product A", "count": 500}],
-  "total_tickets": 29808,
-  "avg_resolution_time_hours": 24.5,
-  "avg_satisfaction_rating": 4.2,
-  "resolution_rate": 85.3
+  "status_counts": {
+    "Pending Customer Response": 2881,
+    "Open": 2819,
+    "Closed": 2769
+  },
+  "priority_counts": {
+    "Medium": 2192,
+    "Critical": 2129,
+    "High": 2085,
+    "Low": 2063
+  },
+  "channel_counts": {
+    "Email": 2143,
+    "Phone": 2132,
+    "Social media": 2121,
+    "Chat": 2073
+  },
+  "top_products": [
+    {"product": "Canon EOS", "count": 240},
+    {"product": "GoPro Hero", "count": 228}
+  ],
+  "total_tickets": 8469,
+  "avg_resolution_time_hours": -0.06,
+  "avg_satisfaction_rating": 2.99,
+  "resolution_rate": 0.0
 }
-```
-
-## Teste Rápido
-
-```bash
-# 1. Listar tickets
-curl "http://localhost:8000/tickets"
-
-# 2. Alterar status do ticket 1
-curl -X PATCH "http://localhost:8000/tickets/1" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "in_progress"}'
-
-# 3. Ver métricas
-curl "http://localhost:8000/metrics"
-```
-
-## Estrutura do Projeto
-
-```
-├─ backend/               # FastAPI + SQLite
-│  ├─ app.py             # Endpoints principais
-│  ├─ models.py          # Enums e validações
-│  ├─ repositories.py    # CRUD operations
-│  └─ db.py              # Configuração SQLite
-├─ data/
-│  ├─ raw/tickets.csv    # Dataset do Kaggle
-│  ├─ processed/         # Métricas geradas
-│  └─ etl_support.py     # Script ETL com pandas
-└─ frontend/             # Next.js (opcional)
 ```
 
 ## Tecnologias
@@ -128,7 +120,7 @@ curl "http://localhost:8000/metrics"
 - **Backend**: Python 3.8+ + FastAPI + SQLite
 - **ETL**: pandas + datetime parsing
 - **Frontend**: Next.js 15 + TypeScript + Material Tailwind
-- **Dataset**: Kaggle Customer Support Tickets (29.808 registros)
+- **Dataset**: Kaggle Customer Support Tickets (8.469 registros)
 
 ## Comandos Úteis
 
@@ -138,3 +130,11 @@ make run-backend  # Executar servidor
 make etl          # Processar métricas
 make clean        # Limpar arquivos
 ```
+
+## Documentação
+
+- **[Guia de Início](docs/GETTING_STARTED.md)** - Setup completo para novos desenvolvedores
+- **[Arquitetura](docs/ARCHITECTURE.md)** - Visão geral da arquitetura do sistema
+- **[Estruturas de Dados](docs/DATA_STRUCTURES.md)** - Schemas SQLite, CSV e APIs detalhados
+- **[Guia de Métricas](docs/METRICAS.md)** - Como adicionar novas métricas ao dashboard
+- **[Documentação da API](docs/API.md)** - Endpoints, parâmetros e exemplos completos

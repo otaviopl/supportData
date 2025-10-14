@@ -1,4 +1,4 @@
-.PHONY: help install run-backend seed etl clean test
+.PHONY: help install run-backend seed etl clean test test-api test-api-simple
 
 help:
 	@echo "Available commands:"
@@ -8,6 +8,8 @@ help:
 	@echo "  make etl          - Run ETL script to generate metrics"
 	@echo "  make clean        - Remove database and generated files"
 	@echo "  make test         - Run tests"
+	@echo "  make test-api     - Run comprehensive API tests (Python)"
+	@echo "  make test-api-simple - Run simple API tests (Bash)"
 
 install:
 	@echo "Installing backend dependencies..."
@@ -35,5 +37,13 @@ clean:
 test:
 	@echo "Running tests..."
 	pytest tests/ -v
+
+test-api:
+	@echo "Running comprehensive API tests..."
+	python test_backend.py
+
+test-api-simple:
+	@echo "Running simple API tests..."
+	./test_backend.sh 8000
 
 

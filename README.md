@@ -125,16 +125,34 @@ curl "http://localhost:8000/metrics"
 ## Comandos Úteis
 
 ```bash
-make install      # Instalar dependências
-make run-backend  # Executar servidor
-make etl          # Processar métricas
-make clean        # Limpar arquivos
+make install         # Instalar dependências
+make run-backend     # Executar servidor
+make etl            # Processar métricas
+make test-api       # Testar todos os endpoints (completo)
+make test-api-simple # Testar endpoints (rápido)
+make clean          # Limpar arquivos
+```
+
+## Testes da API
+
+```bash
+# Teste completo (Python) - 25 testes
+make test-api
+# ou
+python test_backend.py
+
+# Teste rápido (Bash) - 18 testes
+make test-api-simple
+# ou
+./test_backend.sh 8000
+
 ```
 
 ## Documentação
 
-- **[Guia de Início](docs/GETTING_STARTED.md)** - Setup completo para novos desenvolvedores
-- **[Arquitetura](docs/ARCHITECTURE.md)** - Visão geral da arquitetura do sistema
-- **[Estruturas de Dados](docs/DATA_STRUCTURES.md)** - Schemas SQLite, CSV e APIs detalhados
-- **[Guia de Métricas](docs/METRICAS.md)** - Como adicionar novas métricas ao dashboard
-- **[Documentação da API](docs/API.md)** - Endpoints, parâmetros e exemplos completos
+- **[🚀 Guia de Início](docs/GETTING_STARTED.md)** - Setup completo para novos desenvolvedores
+- **[🏗️ Arquitetura](docs/ARCHITECTURE.md)** - Visão geral da arquitetura do sistema
+- **[📊 Estruturas de Dados](docs/DATA_STRUCTURES.md)** - Schemas SQLite, CSV e APIs detalhados
+- **[📈 Guia de Métricas](docs/METRICAS.md)** - Como adicionar novas métricas ao dashboard
+- **[🔌 Documentação da API](docs/API.md)** - Endpoints, parâmetros e exemplos completos
+- **[🧪 Scripts de Teste](TESTING.md)** - Testes completos para todos os endpoints

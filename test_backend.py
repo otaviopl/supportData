@@ -1,16 +1,10 @@
 #!/usr/bin/env python3
-"""
-Script completo para testar todos os endpoints do backend FastAPI
-Executa testes em http://localhost:8080
-"""
-
 import requests
 import json
 import sys
 from datetime import datetime
 from typing import Dict, Any
 
-# Configuração
 BASE_URL = "http://localhost:8080"
 HEADERS = {"Content-Type": "application/json"}
 
@@ -27,7 +21,6 @@ class BackendTester:
         
     def test_endpoint(self, method: str, endpoint: str, data: Dict[Any, Any] = None, 
                      expected_status: int = 200, description: str = ""):
-        """Testa um endpoint e registra o resultado"""
         url = f"{self.base_url}{endpoint}"
         
         try:
@@ -40,24 +33,23 @@ class BackendTester:
             elif method.upper() == "DELETE":
                 response = self.session.delete(url)
             else:
-                raise ValueError(f"Método HTTP não suportado: {method}")
+                raise ValueError(f"Unsupported HTTP method: {method}")
             
             success = response.status_code == expected_status
-            status_icon = "✅" if success else "❌"
+            status_icon = "PASS" if success else "FAIL"
             
-            self.log(f"{status_icon} {method} {endpoint} - Status: {response.status_code} (esperado: {expected_status})", 
+            self.log(f"{status_icon} {method} {endpoint} - Status: {response.status_code} (expected: {expected_status})", 
                     "PASS" if success else "FAIL")
             
             if description:
                 self.log(f"   {description}")
             
-            # Tentar parsear JSON se possível
             try:
                 json_data = response.json()
                 if success and json_data:
-                    self.log(f"   Resposta: {json.dumps(json_data, indent=2, ensure_ascii=False)[:200]}...")
+                    self.log(f"   Response: {json.dumps(json_data, indent=2, ensure_ascii=False)[:200]}...")
             except:
-                self.log(f"   Resposta (texto): {response.text[:100]}...")
+                self.log(f"   Response (text): {response.text[:100]}...")
             
             self.test_results.append({
                 "method": method,
@@ -71,174 +63,140 @@ class BackendTester:
             return response if success else None
             
         except requests.exceptions.ConnectionError:
-            self.log(f"❌ {method} {endpoint} - ERRO: Não foi possível conectar ao servidor", "ERROR")
+            self.log(f"FAIL {method} {endpoint} - ERROR: Cannot connect to server", "ERROR")
             self.test_results.append({
                 "method": method,
                 "endpoint": endpoint,
                 "status_code": None,
                 "expected": expected_status,
                 "success": False,
-                "description": f"ERRO: {description}"
+                "description": f"ERROR: {description}"
             })
             return None
         except Exception as e:
-            self.log(f"❌ {method} {endpoint} - ERRO: {str(e)}", "ERROR")
+            self.log(f"FAIL {method} {endpoint} - ERROR: {str(e)}", "ERROR")
             self.test_results.append({
                 "method": method,
                 "endpoint": endpoint,
                 "status_code": None,
                 "expected": expected_status,
                 "success": False,
-                "description": f"ERRO: {description}"
+                "description": f"ERROR: {description}"
             })
             return None
 
     def test_api_info(self):
-        """Testa endpoint de informações da API"""
-        self.log("🔍 Testando informações da API...")
-        response = self.test_endpoint("GET", "/", description="Informações básicas da API")
+        self.log("Testing API info...")
+        response = self.test_endpoint("GET", "/", description="Basic API info")
         return response
 
     def test_tickets_list(self):
-        """Testa listagem de tickets"""
-        self.log("🎫 Testando listagem de tickets...")
+        self.log("Testing ticket listing...")
         
-        # Teste básico
-        response = self.test_endpoint("GET", "/tickets", description="Listar todos os tickets")
+        response = self.test_endpoint("GET", "/tickets", description="List all tickets")
         if not response:
             return None
             
-        # Teste com paginação
-        self.test_endpoint("GET", "/tickets?page=1&page_size=5", description="Listar com paginação")
-        
-        # Teste com filtros
-        self.test_endpoint("GET", "/tickets?status=open", description="Filtrar por status")
-        self.test_endpoint("GET", "/tickets?priority=high", description="Filtrar por prioridade")
-        self.test_endpoint("GET", "/tickets?channel=email", description="Filtrar por canal")
-        
-        # Teste com busca
-        self.test_endpoint("GET", "/tickets?q=erro", description="Buscar por texto")
-        
-        # Teste com múltiplos filtros
+        self.test_endpoint("GET", "/tickets?page=1&page_size=5", description="With pagination")
+        self.test_endpoint("GET", "/tickets?status=open", description="Filter by status")
+        self.test_endpoint("GET", "/tickets?priority=high", description="Filter by priority")
+        self.test_endpoint("GET", "/tickets?channel=email", description="Filter by channel")
+        self.test_endpoint("GET", "/tickets?q=erro", description="Search by text")
         self.test_endpoint("GET", "/tickets?status=open&priority=high&page=1&page_size=3", 
-                          description="Múltiplos filtros")
+                          description="Multiple filters")
         
         return response
 
     def test_ticket_detail(self):
-        """Testa busca de ticket específico"""
-        self.log("🔍 Testando busca de ticket específico...")
+        self.log("Testing specific ticket search...")
         
-        # Teste com ID válido (assumindo que existe)
-        response = self.test_endpoint("GET", "/tickets/1", description="Buscar ticket ID 1")
-        
-        # Teste com ID que não existe
-        self.test_endpoint("GET", "/tickets/999", expected_status=404, description="Ticket inexistente")
-        
-        # Teste com ID inválido
-        self.test_endpoint("GET", "/tickets/abc", expected_status=422, description="ID inválido")
+        response = self.test_endpoint("GET", "/tickets/1", description="Get ticket ID 1")
+        self.test_endpoint("GET", "/tickets/999", expected_status=404, description="Non-existent ticket")
+        self.test_endpoint("GET", "/tickets/abc", expected_status=422, description="Invalid ID")
         
         return response
 
     def test_ticket_update(self):
-        """Testa atualização de tickets"""
-        self.log("✏️ Testando atualização de tickets...")
+        self.log("Testing ticket updates...")
         
-        # Teste atualizar apenas status
         self.test_endpoint("PATCH", "/tickets/1", 
                           data={"status": "in_progress"}, 
-                          description="Atualizar apenas status")
+                          description="Update status only")
         
-        # Teste atualizar apenas prioridade
         self.test_endpoint("PATCH", "/tickets/1", 
                           data={"priority": "urgent"}, 
-                          description="Atualizar apenas prioridade")
+                          description="Update priority only")
         
-        # Teste atualizar ambos
         self.test_endpoint("PATCH", "/tickets/1", 
                           data={"status": "resolved", "priority": "low"}, 
-                          description="Atualizar status e prioridade")
+                          description="Update both")
         
-        # Teste com dados inválidos
         self.test_endpoint("PATCH", "/tickets/1", 
                           data={"status": "invalid_status"}, 
                           expected_status=422, 
-                          description="Status inválido")
+                          description="Invalid status")
         
-        # Teste sem dados
         self.test_endpoint("PATCH", "/tickets/1", 
                           data={}, 
                           expected_status=400, 
-                          description="Body vazio")
+                          description="Empty body")
         
-        # Teste com ticket inexistente
         self.test_endpoint("PATCH", "/tickets/999", 
                           data={"status": "resolved"}, 
                           expected_status=404, 
-                          description="Ticket inexistente")
+                          description="Non-existent ticket")
 
     def test_metrics(self):
-        """Testa endpoint de métricas"""
-        self.log("📊 Testando métricas...")
-        response = self.test_endpoint("GET", "/metrics", description="Buscar métricas processadas")
+        self.log("Testing metrics...")
+        response = self.test_endpoint("GET", "/metrics", description="Get processed metrics")
         return response
 
     def test_invalid_endpoints(self):
-        """Testa endpoints que não existem"""
-        self.log("🚫 Testando endpoints inválidos...")
+        self.log("Testing invalid endpoints...")
         
-        self.test_endpoint("GET", "/invalid", expected_status=404, description="Endpoint inexistente")
-        self.test_endpoint("POST", "/tickets", expected_status=405, description="Método não permitido")
-        self.test_endpoint("DELETE", "/tickets/1", expected_status=405, description="Método não permitido")
+        self.test_endpoint("GET", "/invalid", expected_status=404, description="Non-existent endpoint")
+        self.test_endpoint("POST", "/tickets", expected_status=405, description="Method not allowed")
+        self.test_endpoint("DELETE", "/tickets/1", expected_status=405, description="Method not allowed")
 
     def test_validation_errors(self):
-        """Testa validações de parâmetros"""
-        self.log("🔍 Testando validações...")
+        self.log("Testing validation...")
         
-        # Parâmetros inválidos
-        self.test_endpoint("GET", "/tickets?page=0", expected_status=422, description="Página inválida")
-        self.test_endpoint("GET", "/tickets?page_size=200", expected_status=422, description="Page size muito grande")
-        self.test_endpoint("GET", "/tickets?status=invalid", expected_status=422, description="Status inválido")
-        self.test_endpoint("GET", "/tickets?priority=invalid", expected_status=422, description="Prioridade inválida")
+        self.test_endpoint("GET", "/tickets?page=0", expected_status=422, description="Invalid page")
+        self.test_endpoint("GET", "/tickets?page_size=200", expected_status=422, description="Page size too large")
+        self.test_endpoint("GET", "/tickets?status=invalid", expected_status=422, description="Invalid status")
+        self.test_endpoint("GET", "/tickets?priority=invalid", expected_status=422, description="Invalid priority")
 
     def run_all_tests(self):
-        """Executa todos os testes"""
-        self.log("🚀 Iniciando testes do backend FastAPI", "START")
-        self.log(f"🌐 URL base: {self.base_url}")
+        self.log("Starting FastAPI backend tests", "START")
+        self.log(f"Base URL: {self.base_url}")
         self.log("=" * 60)
         
-        # Testes principais
         self.test_api_info()
         self.test_tickets_list()
         self.test_ticket_detail()
         self.test_ticket_update()
         self.test_metrics()
-        
-        # Testes de validação e erro
         self.test_invalid_endpoints()
         self.test_validation_errors()
-        
-        # Resumo
         self.print_summary()
 
     def print_summary(self):
-        """Imprime resumo dos testes"""
         self.log("=" * 60)
-        self.log("📋 RESUMO DOS TESTES", "SUMMARY")
+        self.log("TEST SUMMARY", "SUMMARY")
         
         total_tests = len(self.test_results)
         passed_tests = sum(1 for result in self.test_results if result["success"])
         failed_tests = total_tests - passed_tests
         
-        self.log(f"Total de testes: {total_tests}")
-        self.log(f"✅ Passou: {passed_tests}")
-        self.log(f"❌ Falhou: {failed_tests}")
+        self.log(f"Total tests: {total_tests}")
+        self.log(f"Passed: {passed_tests}")
+        self.log(f"Failed: {failed_tests}")
         
         success_rate = (passed_tests / total_tests) * 100 if total_tests > 0 else 0
-        self.log(f"📊 Taxa de sucesso: {success_rate:.1f}%")
+        self.log(f"Success rate: {success_rate:.1f}%")
         
         if failed_tests > 0:
-            self.log("\n❌ TESTES QUE FALHARAM:", "FAIL")
+            self.log("\nFAILED TESTS:", "FAIL")
             for result in self.test_results:
                 if not result["success"]:
                     self.log(f"   {result['method']} {result['endpoint']} - {result['description']}")
@@ -246,33 +204,28 @@ class BackendTester:
         self.log("=" * 60)
         
         if failed_tests == 0:
-            self.log("🎉 Todos os testes passaram!", "SUCCESS")
+            self.log("All tests passed!", "SUCCESS")
             return True
         else:
-            self.log(f"⚠️ {failed_tests} teste(s) falharam. Verifique o backend.", "WARNING")
+            self.log(f"{failed_tests} test(s) failed. Check backend.", "WARNING")
             return False
 
 def main():
-    """Função principal"""
     import argparse
     
-    parser = argparse.ArgumentParser(description="Testa todos os endpoints do backend FastAPI")
-    parser.add_argument("--url", default=BASE_URL, help=f"URL base do backend (default: {BASE_URL})")
-    parser.add_argument("--port", type=int, help="Porta do backend (sobrescreve URL)")
+    parser = argparse.ArgumentParser(description="Test all FastAPI backend endpoints")
+    parser.add_argument("--url", default=BASE_URL, help=f"Backend base URL (default: {BASE_URL})")
+    parser.add_argument("--port", type=int, help="Backend port (overrides URL)")
     
     args = parser.parse_args()
     
-    # Se porta foi especificada, usar localhost com essa porta
     if args.port:
         base_url = f"http://localhost:{args.port}"
     else:
         base_url = args.url
     
-    # Executar testes
     tester = BackendTester(base_url)
     success = tester.run_all_tests()
-    
-    # Exit code baseado no resultado
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

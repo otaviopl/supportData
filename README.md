@@ -7,7 +7,7 @@ Sistema de suporte com FastAPI (SQLite) + ETL em pandas (CSV do Kaggle) + Next.j
 - CSV Kaggle: somente métricas. ETL gera `data/processed/metrics.json`.
 - Frontend: páginas de Tickets e Dashboard (lendo `/tickets` e `/metrics`).
 
-Dataset: `Customer Support Ticket Dataset` (Kaggle).
+Dataset: [Customer Support Ticket Dataset](https://www.kaggle.com/datasets/suraj520/customer-support-ticket-dataset?resource=download).
 
 ## Como rodar (Docker)
 ```bash
@@ -16,29 +16,6 @@ docker compose up -d --build
 # Backend:   http://localhost:8000
 ```
 O backend executa seed e ETL automaticamente na inicialização do container.
-
-### Docker (passo a passo)
-```bash
-# na raiz do projeto
-docker compose up -d             # inicia em segundo plano
-docker compose up -d --build     # (primeira vez ou após mudanças)
-
-# status dos serviços
-docker compose ps
-
-# logs
-docker compose logs -f backend
-docker compose logs -f frontend
-
-# entrar no container
-docker compose exec backend sh
-docker compose exec frontend sh
-
-# parar
-docker compose down
-# parar e remover volumes (remove app.db e metrics.json do volume)
-docker compose down -v
-```
 
 ## Como rodar (local)
 ```bash

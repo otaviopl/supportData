@@ -122,7 +122,7 @@ export default function Dashboard() {
             Dados Importados do CSV
           </Typography>
           <Typography variant="small" color="green" className="opacity-80">
-            Métricas geradas a partir do arquivo tickets.csv com {metrics?.total_tickets.toLocaleString()} registros
+            Métricas geradas a partir do arquivo tickets.csv.
           </Typography>
         </div>
       </div>
@@ -136,45 +136,6 @@ export default function Dashboard() {
             </Typography>
             <Typography variant="h3" color="gray">
               {metrics.total_tickets.toLocaleString()}
-            </Typography>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Typography variant="h6" color="blue-gray" className="mb-2">
-              Taxa de Resolução
-            </Typography>
-            <Typography variant="h3" color="gray">
-              {metrics.resolution_rate}%
-            </Typography>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Typography variant="h6" color="blue-gray" className="mb-2">
-              Tempo Médio Resolução
-            </Typography>
-            <Typography variant="h3" color="gray">
-              {metrics.avg_resolution_time_hours 
-                ? `${metrics.avg_resolution_time_hours}h`
-                : 'N/A'
-              }
-            </Typography>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Typography variant="h6" color="blue-gray" className="mb-2">
-              Satisfação Média
-            </Typography>
-            <Typography variant="h3" color="gray">
-              {metrics.avg_satisfaction_rating 
-                ? `${metrics.avg_satisfaction_rating}/5`
-                : 'N/A'
-              }
             </Typography>
           </CardBody>
         </Card>
@@ -244,29 +205,8 @@ export default function Dashboard() {
           </CardBody>
         </Card>
 
-        {/* Top Produtos */}
-        <Card>
-          <CardBody>
-            <Typography variant="h4" color="blue-gray" className="mb-4">
-              Top Produtos
-            </Typography>
-            <div className="space-y-3">
-              {metrics.top_products.slice(0, 5).map((product, index) => (
-                <div key={product.product} className="flex justify-between items-center">
-                  <Typography color="blue-gray">
-                    {index + 1}. {product.product}
-                  </Typography>
-                  <Typography color="gray" className="font-semibold">
-                    {product.count}
-                  </Typography>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Tipo de Ticket */}
-        {metrics.type_counts && Object.keys(metrics.type_counts).length > 0 && (
+        {/* Tipos */}
+        {metrics.type_counts && (
           <Card>
             <CardBody>
               <Typography variant="h4" color="blue-gray" className="mb-4">
@@ -288,28 +228,27 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Distribuição por Gênero */}
-        {metrics.gender_distribution && Object.keys(metrics.gender_distribution).length > 0 && (
-          <Card>
-            <CardBody>
-              <Typography variant="h4" color="blue-gray" className="mb-4">
-                Distribuição por Gênero
-              </Typography>
-              <div className="space-y-3">
-                {Object.entries(metrics.gender_distribution).map(([gender, count]) => (
-                  <div key={gender} className="flex justify-between items-center">
-                    <Typography color="blue-gray" className="capitalize">
-                      {gender === 'male' ? 'Masculino' : gender === 'female' ? 'Feminino' : gender}
-                    </Typography>
-                    <Typography color="gray" className="font-semibold">
-                      {count.toLocaleString()}
-                    </Typography>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
-        )}
+        {/* Top Produtos */}
+        <Card>
+          <CardBody>
+            <Typography variant="h4" color="blue-gray" className="mb-4">
+              Top Produtos
+            </Typography>
+            <div className="space-y-3">
+              {metrics.top_products.slice(0, 5).map((product, index) => (
+                <div key={product.product} className="flex justify-between items-center">
+                  <Typography color="blue-gray">
+                    {index + 1}. {product.product}
+                  </Typography>
+                  <Typography color="gray" className="font-semibold">
+                    {product.count}
+                  </Typography>
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+
       </div>
 
       {/* Tickets ao longo do tempo */}

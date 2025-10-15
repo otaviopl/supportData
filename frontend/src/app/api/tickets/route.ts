@@ -22,3 +22,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ items: [], page: 1, page_size: 20, total: 0 })
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const data = await apiClient.createTicket(body)
+    return NextResponse.json(data, { status: 201 })
+  } catch (error) {
+    console.error('Error creating ticket:', error)
+    return NextResponse.json(
+      { error: 'Failed to create ticket' },
+      { status: 500 }
+    )
+  }
+}

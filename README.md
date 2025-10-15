@@ -69,6 +69,52 @@ make etl    # processa CSV e escreve metrics.json
       -H 'Content-Type: application/json' \
       -d '{"status":"resolved"}'
     ```
+- POST `/tickets` – cria um novo ticket.
+### Webhook (n8n)
+Se a criação/atualização resultar em `status = closed` ou `priority = high`, o backend envia um POST para a URL definida em `N8N_WEBHOOK_URL` (ou `n8n_webhook_url`).
+
+Corpo do POST (JSON):
+```json
+{
+  "id": 1,
+  "status": "closed",
+  "priority": "high",
+  "customer_name": "Maria",
+  "subject": "Problema de acesso",
+  "created_at": "2025-01-01T00:00:00Z",
+  "updated_at": "2025-01-01T01:00:00Z"
+}
+```
+
+Configuração:
+- `.env` local: defina `N8N_WEBHOOK_URL=https://seu-n8n/webhook/...`
+- Docker Compose: adicione a variável de ambiente ao serviço `backend`.
+
+  - Body (JSON):
+    ```json
+    {
+      "customer_name": "Nome do Cliente",
+      "channel": "email|slack|whatsapp|web|phone",
+      "subject": "Assunto do ticket",
+      "description": "Texto opcional",
+      "status": "open|in_progress|on_hold|resolved|closed",
+      "priority": "low|medium|high|urgent",
+      "created_at": "2025-01-01T00:00:00Z" // opcional; se ausente, gerado no backend
+    }
+    ```
+  - Ex.:
+    ```bash
+    curl -X POST http://localhost:8000/tickets \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "customer_name":"Maria",
+        "channel":"email",
+        "subject":"Problema de acesso",
+        "description":"Não consigo logar",
+        "status":"open",
+        "priority":"medium"
+      }'
+    ```
 - GET `/metrics` – retorna métricas do CSV processadas pelo pandas.
   - Ex.: `curl http://localhost:8000/metrics`
 
@@ -78,6 +124,17 @@ make run-backend   # inicia FastAPI (dev)
 make etl           # roda ETL do CSV
 make clean         # remove app.db e metrics.json
 ```
+
+## UI – Criar Ticket
+Na página de lista de tickets (`frontend/src/components/TicketList.tsx`) há um botão "Criar Ticket" que abre um modal com os campos:
+- Cliente (customer_name)
+- Assunto (subject)
+- Descrição (description)
+- Status
+- Prioridade
+- Canal
+
+Ao confirmar, o frontend chama `POST /tickets` (via rota Next.js em `/api/tickets`) e atualiza a lista.
 
 ## Estrutura do projeto (mini)
 ```text

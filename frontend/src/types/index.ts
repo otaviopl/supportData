@@ -29,6 +29,8 @@ export interface TicketUpdateResponse {
   updated_at: string
 }
 
+export type TicketCreate = Omit<Ticket, 'id' | 'updated_at'>
+
 export interface Metrics {
   tickets_by_day: Array<{ date: string; count: number }>
   status_counts: Record<string, number>

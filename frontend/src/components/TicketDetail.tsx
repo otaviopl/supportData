@@ -168,8 +168,8 @@ export default function TicketDetail({ ticketId }: TicketDetailProps) {
               Ticket #{ticket.id}
             </Typography>
             <Chip
-              color={ticket.id <= 20 ? "blue" : "green"}
-              value={ticket.id <= 20 ? "SQLite (Seed)" : "CSV Import"}
+              color={"blue"}
+              value={"SQLite"}
               size="sm"
             />
           </div>

@@ -3,6 +3,8 @@ services:
     build: 
       context: .
       dockerfile: backend/Dockerfile
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
@@ -12,6 +14,9 @@ services:
       - DB_PATH=/app/data/app.db
       - SEED_ON_START=true
       - ETL_ON_START=true
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
   frontend:
     build:

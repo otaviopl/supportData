@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Optional, Any
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.seed import load_seed_data
 from backend.db import init_db
@@ -92,7 +92,7 @@ async def get_ticket(ticket_id: int):
 
 
 @app.patch("/tickets/{ticket_id}", response_model=TicketUpdateResponse)
-async def patch_ticket(ticket_id: int, update_data: TicketUpdate, background_tasks: BackgroundTasks):
+async def patch_ticket(ticket_id: int, update_data: TicketUpdate):
     if update_data.status is None and update_data.priority is None:
         raise HTTPException(
             status_code=400,
@@ -109,8 +109,26 @@ async def patch_ticket(ticket_id: int, update_data: TicketUpdate, background_tas
         priority=updated_ticket.priority,
         updated_at=updated_ticket.updated_at,
     )
-    # Trigger webhook if needed
-    _maybe_enqueue_webhook(background_tasks, updated_ticket)
+    # Trigger webhook synchronously if needed
+    url = os.getenv("n8n_webhook_url") or os.getenv("N8N_WEBHOOK_URL")
+    status_value = updated_ticket.status.value if hasattr(updated_ticket.status, "value") else updated_ticket.status
+    priority_value = updated_ticket.priority.value if hasattr(updated_ticket.priority, "value") else updated_ticket.priority
+    if not url:
+        print("⚠ N8N_WEBHOOK_URL not set; skipping webhook")
+    elif _should_trigger_webhook(status_value, priority_value):
+        payload = {
+            "id": updated_ticket.id,
+            "status": status_value,
+            "priority": priority_value,
+            "customer_name": get_ticket_by_id(ticket_id).customer_name if get_ticket_by_id(ticket_id) else None,
+            "subject": get_ticket_by_id(ticket_id).subject if get_ticket_by_id(ticket_id) else None,
+            "created_at": get_ticket_by_id(ticket_id).created_at if get_ticket_by_id(ticket_id) else None,
+            "updated_at": response.updated_at,
+        }
+        print(f"↗ Queuing webhook to {url} (sync call)")
+        _post_webhook(url, payload)
+    else:
+        print("ℹ Webhook not queued: condition not met")
     return response
 
 
@@ -123,38 +141,21 @@ def _post_webhook(url: str, payload: dict[str, Any]) -> None:
     try:
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=5):
-            pass
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            status_code = getattr(resp, "status", None) or resp.getcode()
+            body = resp.read()
+            body_preview = (body[:200].decode("utf-8", errors="replace") if body else "")
+            print(f"↘ Webhook response {status_code}: {body_preview}")
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="replace") if hasattr(e, "read") else ""
+        print(f"⚠ Webhook HTTPError {e.code} to {url}: {err_body[:200]}")
+    except urllib.error.URLError as e:
+        print(f"⚠ Webhook URLError to {url}: {e}")
     except Exception as e:
         print(f"⚠ Failed to POST webhook to {url}: {e}")
 
-
-def _maybe_enqueue_webhook(background_tasks: BackgroundTasks, ticket: TicketResponse) -> None:
-    url = os.getenv("n8n_webhook_url") or os.getenv("N8N_WEBHOOK_URL")
-    if not url:
-        print("⚠ N8N_WEBHOOK_URL not set; skipping webhook")
-        return
-    # Normalize possible Enum values to strings
-    status_value = ticket.status.value if hasattr(ticket.status, "value") else ticket.status
-    priority_value = ticket.priority.value if hasattr(ticket.priority, "value") else ticket.priority
-    if _should_trigger_webhook(status_value, priority_value):
-        payload = {
-            "id": ticket.id,
-            "status": status_value,
-            "priority": priority_value,
-            "customer_name": ticket.customer_name,
-            "subject": ticket.subject,
-            "created_at": ticket.created_at,
-            "updated_at": ticket.updated_at,
-        }
-        print(f"↗ Queuing webhook to {url}")
-        background_tasks.add_task(_post_webhook, url, payload)
-    else:
-        print("ℹ Webhook not queued: condition not met")
-
-
 @app.post("/tickets", response_model=TicketResponse, status_code=201)
-async def post_ticket(new_ticket: TicketCreate, background_tasks: BackgroundTasks):
+async def post_ticket(new_ticket: TicketCreate):
     # Ensure DB schema exists
     init_db()
 
@@ -176,7 +177,26 @@ async def post_ticket(new_ticket: TicketCreate, background_tasks: BackgroundTask
     created = get_ticket_by_id(ticket_id)
     if not created:
         raise HTTPException(status_code=500, detail="Failed to create ticket")
-    _maybe_enqueue_webhook(background_tasks, created)
+    # Trigger webhook synchronously if needed
+    url = os.getenv("n8n_webhook_url") or os.getenv("N8N_WEBHOOK_URL")
+    status_value = created.status.value if hasattr(created.status, "value") else created.status
+    priority_value = created.priority.value if hasattr(created.priority, "value") else created.priority
+    if not url:
+        print("⚠ N8N_WEBHOOK_URL not set; skipping webhook")
+    elif _should_trigger_webhook(status_value, priority_value):
+        payload = {
+            "id": created.id,
+            "status": status_value,
+            "priority": priority_value,
+            "customer_name": created.customer_name,
+            "subject": created.subject,
+            "created_at": created.created_at,
+            "updated_at": created.updated_at,
+        }
+        print(f"↗ Queuing webhook to {url} (sync call)")
+        _post_webhook(url, payload)
+    else:
+        print("ℹ Webhook not queued: condition not met")
     return created
 
 

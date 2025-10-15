@@ -1,4 +1,4 @@
-.PHONY: help install run-backend seed etl clean test
+.PHONY: help install run-backend seed etl clean
 
 help:
 	@echo "Available commands:"
@@ -7,7 +7,6 @@ help:
 	@echo "  make seed         - Load seed data into database"
 	@echo "  make etl          - Run ETL script to generate metrics"
 	@echo "  make clean        - Remove database and generated files"
-	@echo "  make test         - Run tests"
 
 install:
 	@echo "Installing backend dependencies..."
@@ -31,9 +30,4 @@ clean:
 	rm -f data/processed/metrics.json
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
-
-test:
-	@echo "Running tests..."
-	pytest tests/ -v
-
 

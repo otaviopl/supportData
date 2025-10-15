@@ -1,140 +1,120 @@
-# Support Ticket Management System
+# Support Tickets – Guia Rápido
 
-Sistema de gerenciamento de tickets de suporte com FastAPI + SQLite e processamento ETL.
+Sistema de suporte com FastAPI (SQLite) + ETL em pandas (CSV do Kaggle) + Next.js.
 
-## Dataset
+## O que é cada parte
+- SQLite: tickets CRUD (lista/edita).
+- CSV Kaggle: somente métricas. ETL gera `data/processed/metrics.json`.
+- Frontend: páginas de Tickets e Dashboard (lendo `/tickets` e `/metrics`).
 
-**Fonte**: [Customer Support Ticket Dataset - Kaggle](https://www.kaggle.com/datasets/suraj520/customer-support-ticket-dataset?resource=download)
+Dataset: [Customer Support Ticket Dataset](https://www.kaggle.com/datasets/suraj520/customer-support-ticket-dataset?resource=download).
 
-- 29.808 tickets de suporte ao cliente
-- Campos: Data, Status, Prioridade, Canal, Produto, Satisfação
-- Formato: CSV com dados históricos reais
-
-## Setup Rápido
-
-### 1. Backend
+## Como rodar (Docker)
 ```bash
-# Instalar dependências
+docker compose up -d --build
+# Frontend:  http://localhost:3000
+# Backend:   http://localhost:8000
+```
+O backend executa seed e ETL automaticamente na inicialização do container.
+
+## Como rodar (local)
+```bash
+# Backend
 pip install -r backend/requirements.txt
+uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
 
-# Executar servidor
-uvicorn backend.app:app --reload
-```
-
-### 2. ETL (Métricas)
-```bash
-# Processar dados do CSV com pandas
+# ETL (gera metrics.json)
 python data/etl_support.py
+
+# Frontend
+cd frontend && pnpm install && pnpm dev
 ```
 
-### 3. Frontend (Opcional)
+## Primeira execução (se rodar local)
 ```bash
-cd frontend
-pnpm install
-pnpm dev
+make seed   # carrega ~20 tickets no SQLite
+make etl    # processa CSV e escreve metrics.json
 ```
 
-## API Endpoints
+## Endpoints
+- GET `/tickets` – lista com filtros (`status`, `priority`, `channel`, `search`).
+  - Ex.: `curl "http://localhost:8000/tickets?status=open&priority=high"`
+- PATCH `/tickets/{id}` – atualiza `status` e/ou `priority`.
+  - Ex.:
+    ```bash
+    curl -X PATCH http://localhost:8000/tickets/1 \
+      -H 'Content-Type: application/json' \
+      -d '{"status":"resolved"}'
+    ```
+- POST `/tickets` – cria um novo ticket.
+### Webhook (n8n)
+Se a criação/atualização resultar em `status = closed` ou `priority = high`, o backend envia um POST para a URL definida em `N8N_WEBHOOK_URL` (ou `n8n_webhook_url`).
 
-### GET /tickets
-Lista tickets com paginação e filtros.
-
-**Parâmetros:**
-- `page` (int): Página (default: 1)
-- `page_size` (int): Itens por página (default: 20, max: 100)
-- `q` (string): Busca em assunto/cliente
-- `status` (enum): open, in_progress, on_hold, resolved, closed
-- `priority` (enum): low, medium, high, urgent
-- `channel` (enum): email, slack, whatsapp, web, phone
-
-**Exemplo:**
-```bash
-curl "http://localhost:8000/tickets?status=open&priority=high"
-```
-
-### PATCH /tickets/{id}
-Atualiza status e/ou prioridade de um ticket.
-
-**Body:**
+Corpo do POST (JSON):
 ```json
 {
-  "status": "resolved",
-  "priority": "medium"
+  "id": 1,
+  "status": "closed",
+  "priority": "high",
+  "customer_name": "Maria",
+  "subject": "Problema de acesso",
+  "created_at": "2025-01-01T00:00:00Z",
+  "updated_at": "2025-01-01T01:00:00Z"
 }
 ```
 
-**Exemplo:**
+Configuração:
+- `.env` local: defina `N8N_WEBHOOK_URL=https://seu-n8n/webhook/...`
+
+  - Body (JSON):
+    ```json
+    {
+      "customer_name": "Nome do Cliente",
+      "channel": "email|slack|whatsapp|web|phone",
+      "subject": "Assunto do ticket",
+      "description": "Texto opcional",
+      "status": "open|in_progress|on_hold|resolved|closed",
+      "priority": "low|medium|high|urgent",
+      "created_at": "2025-01-01T00:00:00Z" // opcional; se ausente, gerado no backend
+    }
+    ```
+  - Ex.:
+    ```bash
+    curl -X POST http://localhost:8000/tickets \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "customer_name":"Maria",
+        "channel":"email",
+        "subject":"Problema de acesso",
+        "description":"Não consigo logar",
+        "status":"open",
+        "priority":"medium"
+      }'
+    ```
+- GET `/metrics` – retorna métricas do CSV processadas pelo pandas.
+  - Ex.: `curl http://localhost:8000/metrics`
+
+## Comandos úteis
 ```bash
-curl -X PATCH "http://localhost:8000/tickets/1" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "resolved"}'
+make run-backend   # inicia FastAPI (dev)
+make etl           # roda ETL do CSV
+make clean         # remove app.db e metrics.json
 ```
 
-### GET /metrics
-Retorna métricas processadas do dataset Kaggle.
-
-**Exemplo:**
-```bash
-curl "http://localhost:8000/metrics"
+## Estrutura do projeto (mini)
+```text
+.
+├── backend/        # FastAPI + SQLite (seeds/CRUD)
+├── data/           # ETL pandas (CSV -> metrics.json)
+├── frontend/       # Next.js (tickets + dashboard)
+├── Dockerfile      # Frontend
+├── backend/Dockerfile
+├── docker-compose.yml
+├── Makefile        # seed, etl, run-backend, test
+└── README.md
 ```
 
-**Resposta:**
-```json
-{
-  "tickets_by_day": [{"date": "2020-01-01", "count": 8}],
-  "status_counts": {"open": 1500, "resolved": 800},
-  "priority_counts": {"high": 600, "medium": 1200},
-  "channel_counts": {"email": 2000, "web": 800},
-  "top_products": [{"product": "Product A", "count": 500}],
-  "total_tickets": 29808,
-  "avg_resolution_time_hours": 24.5,
-  "avg_satisfaction_rating": 4.2,
-  "resolution_rate": 85.3
-}
-```
-
-## Teste Rápido
-
-```bash
-# 1. Listar tickets
-curl "http://localhost:8000/tickets"
-
-# 2. Alterar status do ticket 1
-curl -X PATCH "http://localhost:8000/tickets/1" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "in_progress"}'
-
-# 3. Ver métricas
-curl "http://localhost:8000/metrics"
-```
-
-## Estrutura do Projeto
-
-```
-├─ backend/               # FastAPI + SQLite
-│  ├─ app.py             # Endpoints principais
-│  ├─ models.py          # Enums e validações
-│  ├─ repositories.py    # CRUD operations
-│  └─ db.py              # Configuração SQLite
-├─ data/
-│  ├─ raw/tickets.csv    # Dataset do Kaggle
-│  ├─ processed/         # Métricas geradas
-│  └─ etl_support.py     # Script ETL com pandas
-└─ frontend/             # Next.js (opcional)
-```
-
-## Tecnologias
-
-- **Backend**: Python 3.8+ + FastAPI + SQLite
-- **ETL**: pandas + datetime parsing
-- **Frontend**: Next.js 15 + TypeScript + Material Tailwind
-- **Dataset**: Kaggle Customer Support Tickets (29.808 registros)
-
-## Comandos Úteis
-
-```bash
-make install      # Instalar dependências
-make run-backend  # Executar servidor
-make etl          # Processar métricas
-make clean        # Limpar arquivos
-```
+## Variáveis importantes
+- `DB_PATH` (opcional): caminho do SQLite (default `./app.db`). No Docker já vai como `/app/app.d``.
+- `ETL_ON_START`: quer carregar as métricas ao iniciar o compose?
+- `SEED_ON_START`: quer seed dos tickets no sqlite ao iniciar o compose?

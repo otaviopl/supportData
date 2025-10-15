@@ -1,0 +1,142 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "endpoint-test",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -560,
+          -240
+        ],
+        "id": "e580b93d-0616-4a78-b287-683753ee1826",
+        "name": "Webhook",
+        "webhookId": "3a4eba0f-bb37-4291-8562-1d8abac386eb"
+      },
+      {
+        "parameters": {
+          "chatId": "6580138364",
+          "text": "={{ $json.mensagem }}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          -112,
+          -240
+        ],
+        "id": "17952e06-723e-4490-b87f-9703f4b03e0e",
+        "name": "Telegram",
+        "webhookId": "6bdc5652-7b4a-4135-a873-8db736c0ce48",
+        "credentials": {
+          "telegramApi": {
+            "id": "CoY6tE48fUuXSpJn",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "dataToSave": {
+            "values": [
+              {
+                "key": "entry",
+                "value": "true"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.executionData",
+        "typeVersion": 1.1,
+        "position": [
+          112,
+          -240
+        ],
+        "id": "c5af154b-d428-4f44-8179-6ac10ae1b834",
+        "name": "Salva execuçao que foi mandado mensagem"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "a9e11dd4-ae94-495e-83b1-8661a0d24a56",
+                "name": "subject",
+                "value": "={{ $json.body.subject }}",
+                "type": "string"
+              },
+              {
+                "id": "9ef9c6df-8bd7-4757-8900-bc178be3d5ed",
+                "name": "priority",
+                "value": "={{ $json.body.priority }}",
+                "type": "string"
+              },
+              {
+                "id": "c1c8b38c-eed0-4022-b483-ee82bd719cc2",
+                "name": "status",
+                "value": "={{ $json.body.status }}",
+                "type": "string"
+              },
+              {
+                "id": "8fb1b294-23b3-4159-8bcf-358bb1c23a4d",
+                "name": "mensagem",
+                "value": "=Oi! Temos atualizações no ticket {{ $json.body.id }}. Prioridade:{{ $json.body.priority }} e Status: {{ $json.body.status }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -336,
+          -240
+        ],
+        "id": "9dc5caa7-2752-4a6c-8c4f-2b4f3960c9ff",
+        "name": "Monta mensagem com body do ticket"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Monta mensagem com body do ticket",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Telegram": {
+        "main": [
+          [
+            {
+              "node": "Salva execuçao que foi mandado mensagem",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Monta mensagem com body do ticket": {
+        "main": [
+          [
+            {
+              "node": "Telegram",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "instanceId": "52925bd06f8304e0164941f092c7201e75c9dc7ca01f4336b3b6714e36db0858"
+    }
+  }

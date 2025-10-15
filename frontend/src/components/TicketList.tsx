@@ -13,7 +13,9 @@ import {
   Option,
   Spinner
 } from '@material-tailwind/react'
-import { TicketListResponse, TicketFilters } from '@/types'
+import { TicketListResponse, TicketFilters, TicketCreate } from '@/types'
+import { apiClient } from '@/lib/api'
+import { Dialog, DialogHeader, DialogBody, DialogFooter, Textarea } from '@material-tailwind/react'
 
 interface TicketListProps {
   initialData?: TicketListResponse
@@ -30,6 +32,17 @@ export default function TicketList({ initialData }: TicketListProps) {
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [channelFilter, setChannelFilter] = useState('')
+  const [openCreate, setOpenCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState<TicketCreate>({
+    created_at: new Date().toISOString(),
+    customer_name: '',
+    channel: 'email',
+    subject: '',
+    description: '',
+    status: 'open',
+    priority: 'medium',
+  })
 
   const fetchTickets = async () => {
     setLoading(true)
@@ -44,10 +57,16 @@ export default function TicketList({ initialData }: TicketListProps) {
       if (channelFilter) queryParams.append('channel', channelFilter)
 
       const response = await fetch(`/api/tickets?${queryParams}`)
+      if (!response.ok) {
+        setTickets([])
+        return
+      }
       const data = await response.json()
-      setTickets(data.items)
+      const items = Array.isArray(data?.items) ? data.items : []
+      setTickets(items)
     } catch (error) {
       console.error('Error fetching tickets:', error)
+      setTickets([])
     } finally {
       setLoading(false)
     }
@@ -94,6 +113,9 @@ export default function TicketList({ initialData }: TicketListProps) {
           <Typography variant="h2" color="gray">
             Tickets
           </Typography>
+          <Button color="blue" size="sm" className="ml-auto" onClick={() => setOpenCreate(true)}>
+            Criar Ticket
+          </Button>
         </div>
         
         {/* Legenda */}
@@ -168,6 +190,17 @@ export default function TicketList({ initialData }: TicketListProps) {
         <div className="flex justify-center py-8">
           <Spinner className="h-8 w-8" />
         </div>
+      ) : tickets.length === 0 ? (
+        <Card className="bg-orange-50 border border-orange-200">
+          <CardBody className="p-5">
+            <Typography variant="h5" color="orange" className="mb-1 font-semibold">
+              Nenhum ticket encontrado
+            </Typography>
+            <Typography color="gray">
+              Consulte a documentação (README) do projeto para passos de inicialização.
+            </Typography>
+          </CardBody>
+        </Card>
       ) : (
         <div className="grid gap-4">
           {tickets.map((ticket) => (
@@ -180,8 +213,8 @@ export default function TicketList({ initialData }: TicketListProps) {
                         {ticket.subject}
                       </Typography>
                       <Chip
-                        color={ticket.id <= 20 ? "blue" : "green"}
-                        value={ticket.id <= 20 ? "SQLite" : "CSV"}
+                        color={"blue"}
+                        value={"SQLite"}
                         size="sm"
                         variant="ghost"
                       />
@@ -229,6 +262,88 @@ export default function TicketList({ initialData }: TicketListProps) {
           ))}
         </div>
       )}
+
+      <Dialog open={openCreate} handler={() => setOpenCreate(false)} size="md">
+        <DialogHeader>Criar Ticket</DialogHeader>
+        <DialogBody className="space-y-4">
+          <Input
+            label="Cliente"
+            value={createForm.customer_name}
+            onChange={(e) => setCreateForm({ ...createForm, customer_name: e.target.value })}
+          />
+          <Input
+            label="Assunto"
+            value={createForm.subject}
+            onChange={(e) => setCreateForm({ ...createForm, subject: e.target.value })}
+          />
+          <Textarea
+            label="Descrição"
+            value={createForm.description || ''}
+            onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Select label="Status" value={createForm.status} onChange={(val) => setCreateForm({ ...createForm, status: (val || 'open') as any })}>
+              <Option value="open">Aberto</Option>
+              <Option value="in_progress">Em Progresso</Option>
+              <Option value="on_hold">Em Espera</Option>
+              <Option value="resolved">Resolvido</Option>
+              <Option value="closed">Fechado</Option>
+            </Select>
+            <Select label="Prioridade" value={createForm.priority} onChange={(val) => setCreateForm({ ...createForm, priority: (val || 'medium') as any })}>
+              <Option value="low">Baixa</Option>
+              <Option value="medium">Média</Option>
+              <Option value="high">Alta</Option>
+              <Option value="urgent">Urgente</Option>
+            </Select>
+            <Select label="Canal" value={createForm.channel} onChange={(val) => setCreateForm({ ...createForm, channel: (val || 'email') as any })}>
+              <Option value="email">Email</Option>
+              <Option value="slack">Slack</Option>
+              <Option value="whatsapp">WhatsApp</Option>
+              <Option value="web">Web</Option>
+              <Option value="phone">Telefone</Option>
+            </Select>
+          </div>
+        </DialogBody>
+        <DialogFooter className="gap-2">
+          <Button variant="text" color="gray" onClick={() => setOpenCreate(false)} disabled={creating}>
+            Cancelar
+          </Button>
+          <Button color="blue" disabled={creating || !createForm.customer_name || !createForm.subject}
+            onClick={async () => {
+              try {
+                setCreating(true)
+                const payload: TicketCreate = {
+                  customer_name: createForm.customer_name,
+                  channel: createForm.channel,
+                  subject: createForm.subject,
+                  description: createForm.description,
+                  status: createForm.status,
+                  priority: createForm.priority,
+                  created_at: new Date().toISOString(),
+                }
+                await apiClient.createTicket(payload)
+                setOpenCreate(false)
+                setCreateForm({
+                  created_at: new Date().toISOString(),
+                  customer_name: '',
+                  channel: 'email',
+                  subject: '',
+                  description: '',
+                  status: 'open',
+                  priority: 'medium',
+                })
+                fetchTickets()
+              } catch (e) {
+                console.error(e)
+              } finally {
+                setCreating(false)
+              }
+            }}
+          >
+            {creating ? 'Criando...' : 'Criar'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   )
 }

@@ -9,8 +9,16 @@ import {
   Spinner,
   Alert,
   Button,
-  Chip
+  Chip,
+  IconButton,
+  Tooltip
 } from '@material-tailwind/react'
+import { 
+  ExclamationTriangleIcon,
+  CommandLineIcon,
+  ServerIcon,
+  ArrowLeftIcon
+} from '@heroicons/react/24/outline'
 import { Metrics } from '@/types'
 
 export default function Dashboard() {
@@ -21,13 +29,16 @@ export default function Dashboard() {
   const fetchMetrics = async () => {
     try {
       const response = await fetch('/api/metrics')
-      if (!response.ok) {
-        throw new Error('Erro ao carregar métricas')
-      }
       const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Erro ao carregar métricas')
+      }
+      
       setMetrics(data)
     } catch (error) {
-      setError('Erro ao carregar métricas')
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar métricas'
+      setError(errorMessage)
       console.error('Error fetching metrics:', error)
     } finally {
       setLoading(false)
@@ -51,7 +62,33 @@ export default function Dashboard() {
   if (error || !metrics) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Alert color="red">{error || 'Erro ao carregar métricas'}</Alert>
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/">
+            <Button color="gray" variant="text" size="sm" className="flex items-center gap-2">
+              <ArrowLeftIcon className="h-4 w-4" />
+              Voltar
+            </Button>
+          </Link>
+          <Typography variant="h2" color="gray">Dashboard</Typography>
+        </div>
+        <Card className="bg-orange-50 border border-orange-200">
+          <CardBody className="p-5">
+            <div className="flex items-start gap-3">
+              <ExclamationTriangleIcon className="h-6 w-6 text-orange-500" />
+              <div>
+                <Typography variant="h5" color="orange" className="mb-1 font-semibold">
+                  Não foi possível carregar as métricas
+                </Typography>
+                <Typography color="gray" className="mb-3">
+                  Consulte a documentação (README) do projeto para passos de inicialização.
+                </Typography>
+                <Button color="gray" variant="text" size="sm" onClick={() => window.location.reload()}>
+                  Tentar novamente
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
       </div>
     )
   }
@@ -73,7 +110,6 @@ export default function Dashboard() {
         </Typography>
       </div>
 
-      {/* Flag de origem dos dados */}
       <div className="flex items-center gap-4 mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
         <Chip
           color="green"
@@ -86,7 +122,7 @@ export default function Dashboard() {
             Dados Importados do CSV
           </Typography>
           <Typography variant="small" color="green" className="opacity-80">
-            Métricas geradas a partir do arquivo tickets.csv com {metrics?.total_tickets.toLocaleString()} registros
+            Métricas geradas a partir do arquivo tickets.csv.
           </Typography>
         </div>
       </div>
@@ -100,45 +136,6 @@ export default function Dashboard() {
             </Typography>
             <Typography variant="h3" color="gray">
               {metrics.total_tickets.toLocaleString()}
-            </Typography>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Typography variant="h6" color="blue-gray" className="mb-2">
-              Taxa de Resolução
-            </Typography>
-            <Typography variant="h3" color="gray">
-              {metrics.resolution_rate}%
-            </Typography>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Typography variant="h6" color="blue-gray" className="mb-2">
-              Tempo Médio Resolução
-            </Typography>
-            <Typography variant="h3" color="gray">
-              {metrics.avg_resolution_time_hours 
-                ? `${metrics.avg_resolution_time_hours}h`
-                : 'N/A'
-              }
-            </Typography>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <Typography variant="h6" color="blue-gray" className="mb-2">
-              Satisfação Média
-            </Typography>
-            <Typography variant="h3" color="gray">
-              {metrics.avg_satisfaction_rating 
-                ? `${metrics.avg_satisfaction_rating}/5`
-                : 'N/A'
-              }
             </Typography>
           </CardBody>
         </Card>
@@ -208,29 +205,8 @@ export default function Dashboard() {
           </CardBody>
         </Card>
 
-        {/* Top Produtos */}
-        <Card>
-          <CardBody>
-            <Typography variant="h4" color="blue-gray" className="mb-4">
-              Top Produtos
-            </Typography>
-            <div className="space-y-3">
-              {metrics.top_products.slice(0, 5).map((product, index) => (
-                <div key={product.product} className="flex justify-between items-center">
-                  <Typography color="blue-gray">
-                    {index + 1}. {product.product}
-                  </Typography>
-                  <Typography color="gray" className="font-semibold">
-                    {product.count}
-                  </Typography>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Tipo de Ticket */}
-        {metrics.type_counts && Object.keys(metrics.type_counts).length > 0 && (
+        {/* Tipos */}
+        {metrics.type_counts && (
           <Card>
             <CardBody>
               <Typography variant="h4" color="blue-gray" className="mb-4">
@@ -252,28 +228,27 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Distribuição por Gênero */}
-        {metrics.gender_distribution && Object.keys(metrics.gender_distribution).length > 0 && (
-          <Card>
-            <CardBody>
-              <Typography variant="h4" color="blue-gray" className="mb-4">
-                Distribuição por Gênero
-              </Typography>
-              <div className="space-y-3">
-                {Object.entries(metrics.gender_distribution).map(([gender, count]) => (
-                  <div key={gender} className="flex justify-between items-center">
-                    <Typography color="blue-gray" className="capitalize">
-                      {gender === 'male' ? 'Masculino' : gender === 'female' ? 'Feminino' : gender}
-                    </Typography>
-                    <Typography color="gray" className="font-semibold">
-                      {count.toLocaleString()}
-                    </Typography>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
-        )}
+        {/* Top Produtos */}
+        <Card>
+          <CardBody>
+            <Typography variant="h4" color="blue-gray" className="mb-4">
+              Top Produtos
+            </Typography>
+            <div className="space-y-3">
+              {metrics.top_products.slice(0, 5).map((product, index) => (
+                <div key={product.product} className="flex justify-between items-center">
+                  <Typography color="blue-gray">
+                    {index + 1}. {product.product}
+                  </Typography>
+                  <Typography color="gray" className="font-semibold">
+                    {product.count}
+                  </Typography>
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+
       </div>
 
       {/* Tickets ao longo do tempo */}

@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - DB_PATH=/app/data/app.db
+      - SEED_ON_START=true
+      - ETL_ON_START=true
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+

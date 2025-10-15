@@ -35,5 +35,20 @@ declare module "@material-tailwind/react" {
   export interface SpinnerProps extends EventCapture {
     placeholder?: unknown;
   }
+  export interface DialogProps extends EventCapture {
+    placeholder?: unknown;
+  }
+  export interface DialogHeaderProps extends EventCapture {
+    placeholder?: unknown;
+  }
+  export interface DialogBodyProps extends EventCapture {
+    placeholder?: unknown;
+  }
+  export interface DialogFooterProps extends EventCapture {
+    placeholder?: unknown;
+  }
+  export interface TextareaProps extends EventCapture {
+    placeholder?: unknown;
+  }
 }
 

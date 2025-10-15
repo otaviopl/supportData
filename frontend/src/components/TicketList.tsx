@@ -44,10 +44,16 @@ export default function TicketList({ initialData }: TicketListProps) {
       if (channelFilter) queryParams.append('channel', channelFilter)
 
       const response = await fetch(`/api/tickets?${queryParams}`)
+      if (!response.ok) {
+        setTickets([])
+        return
+      }
       const data = await response.json()
-      setTickets(data.items)
+      const items = Array.isArray(data?.items) ? data.items : []
+      setTickets(items)
     } catch (error) {
       console.error('Error fetching tickets:', error)
+      setTickets([])
     } finally {
       setLoading(false)
     }
@@ -168,6 +174,17 @@ export default function TicketList({ initialData }: TicketListProps) {
         <div className="flex justify-center py-8">
           <Spinner className="h-8 w-8" />
         </div>
+      ) : tickets.length === 0 ? (
+        <Card className="bg-orange-50 border border-orange-200">
+          <CardBody className="p-5">
+            <Typography variant="h5" color="orange" className="mb-1 font-semibold">
+              Nenhum ticket encontrado
+            </Typography>
+            <Typography color="gray">
+              Consulte a documentação (README) do projeto para passos de inicialização.
+            </Typography>
+          </CardBody>
+        </Card>
       ) : (
         <div className="grid gap-4">
           {tickets.map((ticket) => (

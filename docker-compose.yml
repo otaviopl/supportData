@@ -7,10 +7,11 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
-      - ./app.db:/app/app.db
     environment:
       - PYTHONPATH=/app
-      - DB_PATH=/app/app.db
+      - DB_PATH=/app/data/app.db
+      - SEED_ON_START=true
+      - ETL_ON_START=true
 
   frontend:
     build:

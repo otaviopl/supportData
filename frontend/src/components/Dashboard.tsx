@@ -60,108 +60,31 @@ export default function Dashboard() {
   }
 
   if (error || !metrics) {
-    const isConnectionError = error.includes('Backend não está rodando') || error.includes('ECONNREFUSED')
-    const isMetricsError = error.includes('Métricas não encontradas') || error.includes('vazias')
-    
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
           <Link href="/">
-            <Button
-              color="gray"
-              variant="text"
-              size="sm"
-              className="flex items-center gap-2"
-            >
+            <Button color="gray" variant="text" size="sm" className="flex items-center gap-2">
               <ArrowLeftIcon className="h-4 w-4" />
               Voltar
             </Button>
           </Link>
-          <Typography variant="h2" color="gray">
-            Dashboard
-          </Typography>
+          <Typography variant="h2" color="gray">Dashboard</Typography>
         </div>
-        
-        <Card className="border-l-4 border-l-orange-500 bg-orange-50">
-          <CardBody className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <ExclamationTriangleIcon className="h-8 w-8 text-orange-500" />
-              </div>
-              
-              <div className="flex-1">
-                <Typography variant="h5" color="orange" className="mb-2 font-semibold">
-                  Dashboard Indisponível
+        <Card className="bg-orange-50 border border-orange-200">
+          <CardBody className="p-5">
+            <div className="flex items-start gap-3">
+              <ExclamationTriangleIcon className="h-6 w-6 text-orange-500" />
+              <div>
+                <Typography variant="h5" color="orange" className="mb-1 font-semibold">
+                  Não foi possível carregar as métricas
                 </Typography>
-                
-                <Typography color="gray" className="mb-4">
-                  {error || 'Não foi possível carregar as métricas do dashboard.'}
+                <Typography color="gray" className="mb-3">
+                  Consulte a documentação (README) do projeto para passos de inicialização.
                 </Typography>
-                
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {isMetricsError && (
-                      <Tooltip content="Gera métricas a partir do CSV">
-                        <Button
-                          color="orange"
-                          variant="outlined"
-                          size="sm"
-                          className="flex items-center gap-2"
-                        >
-                          <CommandLineIcon className="h-4 w-4" />
-                          Gerar Métricas
-                        </Button>
-                      </Tooltip>
-                    )}
-                    
-                    {isConnectionError && (
-                      <Tooltip content="Inicia o servidor FastAPI">
-                        <Button
-                          color="blue"
-                          variant="outlined"
-                          size="sm"
-                          className="flex items-center gap-2"
-                        >
-                          <ServerIcon className="h-4 w-4" />
-                          Iniciar Backend
-                        </Button>
-                      </Tooltip>
-                    )}
-                    
-                    <Button
-                      color="gray"
-                      variant="text"
-                      size="sm"
-                      onClick={() => window.location.reload()}
-                    >
-                      Tentar Novamente
-                    </Button>
-                  </div>
-                  
-                  <Card className="bg-gray-50 border-gray-200">
-                    <CardBody className="p-4">
-                      <Typography variant="small" color="gray" className="mb-2 font-semibold">
-                        Comandos para resolver:
-                      </Typography>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <Chip value="1" size="sm" color="orange" className="w-6 h-6 flex items-center justify-center" />
-                          <code className="bg-white px-2 py-1 rounded text-sm border">
-                            python data/etl_support.py
-                          </code>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <Chip value="2" size="sm" color="blue" className="w-6 h-6 flex items-center justify-center" />
-                          <code className="bg-white px-2 py-1 rounded text-sm border">
-                            make run-backend
-                          </code>
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-                </div>
+                <Button color="gray" variant="text" size="sm" onClick={() => window.location.reload()}>
+                  Tentar novamente
+                </Button>
               </div>
             </div>
           </CardBody>

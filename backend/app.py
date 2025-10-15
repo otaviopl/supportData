@@ -1,3 +1,4 @@
+import os
 import json
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -5,6 +6,7 @@ from typing import Optional, Any
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from backend.seed import load_seed_data
+from backend.db import init_db
 from backend.models import (
     TicketListResponse,
     TicketResponse,
@@ -18,7 +20,12 @@ from backend.repositories import get_tickets, get_ticket_by_id, update_ticket
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_seed_data()
+    seed_on_start = os.getenv("SEED_ON_START", "true").lower() == "true"
+    if seed_on_start:
+        load_seed_data()
+    else:
+        # Ensure DB schema exists even without seeding
+        init_db()
     yield
 
 app = FastAPI(

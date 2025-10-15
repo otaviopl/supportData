@@ -88,7 +88,6 @@ Corpo do POST (JSON):
 
 Configuração:
 - `.env` local: defina `N8N_WEBHOOK_URL=https://seu-n8n/webhook/...`
-- Docker Compose: adicione a variável de ambiente ao serviço `backend`.
 
   - Body (JSON):
     ```json
@@ -125,17 +124,6 @@ make etl           # roda ETL do CSV
 make clean         # remove app.db e metrics.json
 ```
 
-## UI – Criar Ticket
-Na página de lista de tickets (`frontend/src/components/TicketList.tsx`) há um botão "Criar Ticket" que abre um modal com os campos:
-- Cliente (customer_name)
-- Assunto (subject)
-- Descrição (description)
-- Status
-- Prioridade
-- Canal
-
-Ao confirmar, o frontend chama `POST /tickets` (via rota Next.js em `/api/tickets`) e atualiza a lista.
-
 ## Estrutura do projeto (mini)
 ```text
 .
@@ -150,6 +138,6 @@ Ao confirmar, o frontend chama `POST /tickets` (via rota Next.js em `/api/ticket
 ```
 
 ## Variáveis importantes
-- `DB_PATH` (opcional): caminho do SQLite (default `./app.db`). No Docker já vai como `/app/app.db`.
-
-Pronto. Use Docker para o caminho mais simples, ou o modo local para desenvolvimento.
+- `DB_PATH` (opcional): caminho do SQLite (default `./app.db`). No Docker já vai como `/app/app.d``.
+- `ETL_ON_START`: quer carregar as métricas ao iniciar o compose?
+- `SEED_ON_START`: quer seed dos tickets no sqlite ao iniciar o compose?

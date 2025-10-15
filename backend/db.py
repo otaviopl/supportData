@@ -1,9 +1,10 @@
+import os
 import sqlite3
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Generator
 
-DB_PATH = Path(__file__).parent.parent / "app.db"
+DB_PATH = Path(os.getenv("DB_PATH", str(Path(__file__).parent.parent / "app.db")))
 
 
 def get_connection() -> sqlite3.Connection:

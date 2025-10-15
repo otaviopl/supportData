@@ -1,10 +1,9 @@
 #!/bin/sh
+set -e
 
-# Seed database and generate metrics
+echo "Seeding database and running ETL via make..."
+make -C /app seed || python -m backend.seed
+make -C /app etl || python /app/data/etl_support.py
 
-python -m backend.seed
-
-python data/etl_support.py
-
-# Start FastAPI server
+echo "Starting FastAPI server..."
 exec uvicorn backend.app:app --host 0.0.0.0 --port 8000

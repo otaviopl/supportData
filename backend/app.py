@@ -16,12 +16,10 @@ from backend.models import (
 )
 from backend.repositories import get_tickets, get_ticket_by_id, update_ticket
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_seed_data()
     yield
-
 
 app = FastAPI(
     title="Support Ticket API",

@@ -1,158 +1,98 @@
-# Support Ticket Management System
+# Support Tickets – Guia Rápido
 
-Sistema de gerenciamento de tickets de suporte com FastAPI + SQLite e processamento ETL.
+Sistema de suporte com FastAPI (SQLite) + ETL em pandas (CSV do Kaggle) + Next.js.
 
-## ⚠️ Arquitetura de Dados
+## O que é cada parte
+- SQLite: tickets CRUD (lista/edita).
+- CSV Kaggle: somente métricas. ETL gera `data/processed/metrics.json`.
+- Frontend: páginas de Tickets e Dashboard (lendo `/tickets` e `/metrics`).
 
-O sistema utiliza **duas fontes de dados independentes**:
+Dataset: `Customer Support Ticket Dataset` (Kaggle).
 
-- **SQLite**: 20+ tickets para operações CRUD (listar, editar)
-- **CSV Kaggle**: para análise e métricas
-- **ETL**: Processa APENAS o CSV → gera métricas em JSON
-- **Frontend**: Lista tickets do SQLite + Dashboard com métricas do CSV
-
-## Dataset
-
-**Fonte**: [Customer Support Ticket Dataset - Kaggle](https://www.kaggle.com/datasets/suraj520/customer-support-ticket-dataset?resource=download)
-
-## Setup Rápido
-
-### 1. Backend
+## Como rodar (Docker)
 ```bash
-# Instalar dependências
+docker compose up -d --build
+# Frontend:  http://localhost:3000
+# Backend:   http://localhost:8000
+```
+O backend executa seed e ETL automaticamente na inicialização do container.
+
+### Docker (passo a passo)
+```bash
+# na raiz do projeto
+docker compose up -d             # inicia em segundo plano
+docker compose up -d --build     # (primeira vez ou após mudanças)
+
+# status dos serviços
+docker compose ps
+
+# logs
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# entrar no container
+docker compose exec backend sh
+docker compose exec frontend sh
+
+# parar
+docker compose down
+# parar e remover volumes (remove app.db e metrics.json do volume)
+docker compose down -v
+```
+
+## Como rodar (local)
+```bash
+# Backend
 pip install -r backend/requirements.txt
+uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
 
-# Executar servidor
-uvicorn backend.app:app --reload
-```
-
-### 2. ETL (Métricas)
-```bash
-# Processar dados do CSV com pandas
+# ETL (gera metrics.json)
 python data/etl_support.py
+
+# Frontend
+cd frontend && pnpm install && pnpm dev
 ```
 
-### 3. Frontend (Opcional)
+## Primeira execução (se rodar local)
 ```bash
-cd frontend
-pnpm install
-pnpm dev
+make seed   # carrega ~20 tickets no SQLite
+make etl    # processa CSV e escreve metrics.json
 ```
 
-## API Endpoints
+## Endpoints
+- GET `/tickets` – lista com filtros (`status`, `priority`, `channel`, `search`).
+  - Ex.: `curl "http://localhost:8000/tickets?status=open&priority=high"`
+- PATCH `/tickets/{id}` – atualiza `status` e/ou `priority`.
+  - Ex.:
+    ```bash
+    curl -X PATCH http://localhost:8000/tickets/1 \
+      -H 'Content-Type: application/json' \
+      -d '{"status":"resolved"}'
+    ```
+- GET `/metrics` – retorna métricas do CSV processadas pelo pandas.
+  - Ex.: `curl http://localhost:8000/metrics`
 
-### GET /tickets
-Lista tickets com paginação e filtros.
-
-**Parâmetros:**
-- `page` (int): Página (default: 1)
-- `page_size` (int): Itens por página (default: 20, max: 100)
-- `q` (string): Busca em assunto/cliente
-- `status` (enum): open, in_progress, on_hold, resolved, closed
-- `priority` (enum): low, medium, high, urgent
-- `channel` (enum): email, slack, whatsapp, web, phone
-
-**Exemplo:**
+## Comandos úteis
 ```bash
-curl "http://localhost:8000/tickets?status=open&priority=high"
+make run-backend   # inicia FastAPI (dev)
+make etl           # roda ETL do CSV
+make clean         # remove app.db e metrics.json
 ```
 
-### PATCH /tickets/{id}
-Atualiza status e/ou prioridade de um ticket.
-
-**Body:**
-```json
-{
-  "status": "resolved",
-  "priority": "medium"
-}
+## Estrutura do projeto (mini)
+```text
+.
+├── backend/        # FastAPI + SQLite (seeds/CRUD)
+├── data/           # ETL pandas (CSV -> metrics.json)
+├── frontend/       # Next.js (tickets + dashboard)
+├── Dockerfile      # Frontend
+├── backend/Dockerfile
+├── docker-compose.yml
+├── Makefile        # seed, etl, run-backend, test
+└── README.md
 ```
 
-**Exemplo:**
-```bash
-curl -X PATCH "http://localhost:8000/tickets/1" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "resolved"}'
-```
+## Variáveis importantes
+- `DB_PATH` (opcional): caminho do SQLite (default `./app.db`). No Docker já vai como `/app/app.db`.
 
-### GET /metrics
-Retorna métricas processadas do dataset Kaggle.
-
-**Exemplo:**
-```bash
-curl "http://localhost:8000/metrics"
-```
-
-**Resposta:**
-```json
-{
-  "tickets_by_day": [{"date": "2020-01-01", "count": 8}],
-  "status_counts": {
-    "Pending Customer Response": 2881,
-    "Open": 2819,
-    "Closed": 2769
-  },
-  "priority_counts": {
-    "Medium": 2192,
-    "Critical": 2129,
-    "High": 2085,
-    "Low": 2063
-  },
-  "channel_counts": {
-    "Email": 2143,
-    "Phone": 2132,
-    "Social media": 2121,
-    "Chat": 2073
-  },
-  "top_products": [
-    {"product": "Canon EOS", "count": 240},
-    {"product": "GoPro Hero", "count": 228}
-  ],
-  "total_tickets": 8469,
-  "avg_resolution_time_hours": -0.06,
-  "avg_satisfaction_rating": 2.99,
-  "resolution_rate": 0.0
-}
-```
-
-## Tecnologias
-
-- **Backend**: Python 3.8+ + FastAPI + SQLite
-- **ETL**: pandas + datetime parsing
-- **Frontend**: Next.js 15 + TypeScript + Material Tailwind
-- **Dataset**: Kaggle Customer Support Tickets (8.469 registros)
-
-## Comandos Úteis
-
-```bash
-make install         # Instalar dependências
-make run-backend     # Executar servidor
-make etl            # Processar métricas
-make test-api       # Testar todos os endpoints (completo)
-make test-api-simple # Testar endpoints (rápido)
-make clean          # Limpar arquivos
-```
-
-## Testes da API
-
-```bash
-# Teste completo (Python) - 25 testes
-make test-api
-# ou
-python test_backend.py
-
-# Teste rápido (Bash) - 18 testes
-make test-api-simple
-# ou
-./test_backend.sh 8000
-
-```
-
-## Documentação
-
-- **[🚀 Guia de Início](docs/GETTING_STARTED.md)** - Setup completo para novos desenvolvedores
-- **[🏗️ Arquitetura](docs/ARCHITECTURE.md)** - Visão geral da arquitetura do sistema
-- **[📊 Estruturas de Dados](docs/DATA_STRUCTURES.md)** - Schemas SQLite, CSV e APIs detalhados
-- **[📈 Guia de Métricas](docs/METRICAS.md)** - Como adicionar novas métricas ao dashboard
-- **[🔌 Documentação da API](docs/API.md)** - Endpoints, parâmetros e exemplos completos
-- **[🧪 Scripts de Teste](TESTING.md)** - Testes completos para todos os endpoints
+Pronto. Use Docker para o caminho mais simples, ou o modo local para desenvolvimento.

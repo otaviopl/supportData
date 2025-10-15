@@ -82,7 +82,6 @@ export default function Dashboard() {
           </Typography>
         </div>
         
-        {/* Card de erro elegante */}
         <Card className="border-l-4 border-l-orange-500 bg-orange-50">
           <CardBody className="p-6">
             <div className="flex items-start gap-4">
@@ -100,7 +99,6 @@ export default function Dashboard() {
                 </Typography>
                 
                 <div className="space-y-3">
-                  {/* Botões de ação */}
                   <div className="flex flex-wrap gap-2">
                     {isMetricsError && (
                       <Tooltip content="Gera métricas a partir do CSV">
@@ -140,7 +138,6 @@ export default function Dashboard() {
                     </Button>
                   </div>
                   
-                  {/* Comandos em card separado */}
                   <Card className="bg-gray-50 border-gray-200">
                     <CardBody className="p-4">
                       <Typography variant="small" color="gray" className="mb-2 font-semibold">
@@ -190,7 +187,6 @@ export default function Dashboard() {
         </Typography>
       </div>
 
-      {/* Flag de origem dos dados */}
       <div className="flex items-center gap-4 mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
         <Chip
           color="green"
